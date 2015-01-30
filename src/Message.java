@@ -8,6 +8,7 @@ public class Message implements Serializable {
     private String dest;
     private String kind;
     private Object data;
+    private boolean duplicate;
 
     public Message(String dest, String kind, Object data) {
         this.dest = dest;
