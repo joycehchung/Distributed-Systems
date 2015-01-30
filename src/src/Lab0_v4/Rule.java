@@ -4,33 +4,32 @@ public class Rule
 	private String src = null;
 	private String dest = null;
 	private String kind = null;
-
-
+	private Integer seqNum = null;
+	private int matched = 0;
 	public Rule(String action)
 	{
 		this.action = action;
 	}
 
-	public String getAction(){return action;}
-	public String getSrc(){return src;}
-	public String getDest(){return dest;}
-	public String getKind(){return kind;}
+	public String get_action(){return action;}
+	public String get_source(){return src;}
+	public String get_destination(){return dest;}
+	public String get_kind(){return kind;}
+	public Integer get_seqNum(){return seqNum;}
 
-
-	public void setAction(String action){this.action = action;}
-	public void setSrc(String src){this.src = src;}
-	public void setDest(String dest){this.dest = dest;}
-	public void setKind(String kind){this.kind = kind;}
-
-
-	synchronized public void addMatch(){matched++;}
-	public void resetMatch(){matched = 0;}
+	public void set_action(String action){this.action = action;}
+	public void set_source(String src){this.src = src;}
+	public void set_destination(String dest){this.dest = dest;}
+	public void set_kind(String kind){this.kind = kind;}
+	public void set_seqNum(Integer seqNum){this.seqNum = seqNum;}
 
 	public String toString()
 	{
 		return  ("Action:" + action + "|Src:" + src + "|Dest:" + dest
-				+ "|Kind:" + kind + "|ID:" + id + "|Nth:" + nth + "|EveryNth:"
-				+ everynth + " |matched: " + matched + " time(s)");
+				+ "|Kind:" + kind + "|seqNum:" + seqNum );
 	}
+	
+	synchronized public void addMatch(){matched++;}
 }
+
 

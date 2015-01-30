@@ -9,6 +9,9 @@ import javax.swing.event.*;
 
 public class MessagePasser {
 	
+	static ArrayList<Rule> SendRules = new ArrayList<Rule>();
+	static ArrayList<Rule> ReceiveRules = new ArrayList<Rule>();
+	
 	// Servers and sockets
 	Socket[] mySockets = new Socket[3];
 	ServerSocket myServerSocket;
@@ -612,6 +615,117 @@ public class MessagePasser {
 	}
 	
 	
+	
+	public static void loadConfig()
+	{		try
+		{
+			HashMap<String, User> users = new HashMap<String, User>();
+			
+			FileInputStream fileInput = new FileInputStream("config");
+			Yaml yaml = new Yaml();
+			Map<String, Object> data = (Map<String, Object>)yaml.load(fileInput);
+			ArrayList<HashMap<String, Object> > config = (ArrayList<HashMap<String, Object> >)data.get("configuration");
+
+			Object local_name = "alice";
+			String conf_filename = "config";
+			for(HashMap<String, Object> row : config)
+			{
+				String Name = (String)row.get("name");
+				User usr = new User(Name);
+				usr.setIp((String)row.get("ip"));
+				usr.setPort((Integer)row.get("port"));
+				users.put(Name, usr);
+				System.out.println(usr.toString());
+			}
+			if(!users.containsKey(local_name))
+			{
+				System.err.println("local_name: " + local_name + " isn't in " + conf_filename + ", please check again!");
+				System.exit(1);
+			}
+			ArrayList<HashMap<String, Object> > send_rule_arr = (ArrayList<HashMap<String, Object> >)data.get("sendRules");
+			
+			for(HashMap<String, Object> send_rule : send_rule_arr)
+			{
+				String action = (String)send_rule.get("action");
+				Rule r = new Rule(action);
+				for(String key: send_rule.keySet())
+				{
+					if(key.equals("src"))
+						r.set_source((String)send_rule.get(key));
+					if(key.equals("dest"))
+						r.set_destination((String)send_rule.get(key));
+					if(key.equals("kind"))
+						r.set_kind((String)send_rule.get(key));
+					if(key.equals("seqNum"))
+						r.set_seqNum((Integer)send_rule.get(key));
+
+				}
+				SendRules.add(r);
+				System.out.println("Send Rules");
+				System.out.println(SendRules);
+			}
+			SendRules.toString();
+			ArrayList<HashMap<String, Object> > receive_rule_arr = (ArrayList<HashMap<String, Object> >)data.get("receiveRules");
+			for(HashMap<String, Object> receive_rule : receive_rule_arr)
+			{
+				String action = (String)receive_rule.get("action");
+				Rule r = new Rule(action);
+				for(String key: receive_rule.keySet())
+				{
+					if(key.equals("src"))
+						r.set_source((String)receive_rule.get(key));
+					if(key.equals("dest"))
+						r.set_destination((String)receive_rule.get(key));
+					if(key.equals("kind"))
+						r.set_kind((String)receive_rule.get(key));
+					if(key.equals("seqNum"))
+						r.set_seqNum((Integer)receive_rule.get(key));
+				}
+				ReceiveRules.add(r);
+				System.out.println("Receive Rules");
+				System.out.println(ReceiveRules.toString());
+			}
+			ReceiveRules.toString();
+		}
+		catch(Exception ex)
+		{
+			ex.printStackTrace();
+		}
+		
+	}
+	
+	
+	public Rule CheckRule(Message message, int type)
+	{
+		ArrayList<Rule> rule_arr = null;
+		if(type == 0)
+			rule_arr = SendRules;
+		else if(type == 1)
+			rule_arr = ReceiveRules;
+		else
+		{
+			System.err.println("error use of CheckRule with type = " + type);
+			System.exit(1);
+		}
+		for(Rule rule: rule_arr)
+		{
+			if((rule.get_source() != null) && !(rule.get_source().equals(message.get_source())))
+				continue;
+			else if((rule.get_destination() != null) && !(rule.get_destination().equals(message.get_destination())))
+				continue;
+			else if((rule.get_kind() != null) && !(rule.get_kind().equals(message.get_kind())))
+				continue;
+
+
+
+			rule.addMatch(); 
+
+			return rule;  
+		}
+		return null;  
+	}	
+	
+	
   public static void main(String[] args) {
 	  
 	  //** UNCOMMENT THIS LINE to run from command line 
@@ -621,4 +735,5 @@ public class MessagePasser {
 	  new MessagePasser("config_file", "bob");
   }
 }
+
 
