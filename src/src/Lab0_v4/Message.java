@@ -69,7 +69,7 @@ public class Message implements Serializable {
 
     @Override
     public String toString() {
-        return "From:" + this.get_source() + " to:" + this.get_destinationt() +
+        return "From:" + this.get_source() + " to:" + this.get_destination() +
                " Seq:" + this.get_seqNum() + " Kind:" + this.get_kind()
                + " Dup:" + this.get_duplicate() + " Data:" + this.get_data();
     }

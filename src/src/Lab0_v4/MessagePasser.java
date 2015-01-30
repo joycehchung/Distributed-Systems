@@ -322,18 +322,7 @@ public class MessagePasser {
 		                  mainFrame.repaint();
 		                  
 		                  // Connect Function
-		                  MakeConnections(numNodes, nodeNumber);
-		                  
-		                  try {
-		                	  	statusBar.setText("WAITING FOR 10 SECONDS FOR EVERYONE ELSE TO CONNECT");
-			                  	mainFrame.repaint();
-								Thread.sleep(10000);
-								statusBar.setText("Connected");
-				                mainFrame.repaint();
-							} catch (InterruptedException e1) {
-								System.out.print("Sleep did not work");
-								e1.printStackTrace();
-							}
+		                  MakeConnections(numNodes, nodeNumber);	               
 		                  
 		                  // Send messages indicating identity
 		                  SendInformation();
@@ -412,8 +401,8 @@ public class MessagePasser {
 			            	   
 			            	   if (!message.equals("")) {
 				            	   Message theMessage = new Message(destination, kind, data);
-				            	   theMessage.setSeqNum(sequenceNumber);
-				            	   theMessage.setSrc(nodeME.name);
+				            	   theMessage.set_seqNum(sequenceNumber);
+				            	   theMessage.set_source(nodeME.name);
 				            	   sequenceNumber++;
 			                	   send(theMessage); 
 			                	   mainFrame.repaint();
@@ -547,12 +536,11 @@ public class MessagePasser {
 					sNum = Integer.parseInt(msg.substring(msg.indexOf("Seq:")+4, msg.indexOf(" Kind:")));
 					knd = msg.substring(msg.indexOf("Kind:")+5, msg.indexOf(" Data:"));
 					dta = msg.substring(msg.indexOf("Data:")+5, msg.length());
-				gotMessage.setDest(dest);
-				gotMessage.setSrc(src);
-				gotMessage.setSeqNum(sNum);
-				gotMessage.setKind(knd);
-				gotMessage.setSeqNum(sNum);
-				gotMessage.setData(dta);
+				gotMessage.set_destination(dest);
+				gotMessage.set_source(src);
+				gotMessage.set_seqNum(sNum);
+				gotMessage.set_kind(knd);
+				gotMessage.set_data(dta);
 
 				toReceive.append(msg + "\n");
 			} 
@@ -609,7 +597,7 @@ public class MessagePasser {
 	  	//new MessagePasser(args[0], args[1]);
 	  
 	  // Use this version if running from within eclipse
-	  new MessagePasser("config_file", "alice");
+	  new MessagePasser("config_file", "bob");
   }
 }
 
