@@ -3,7 +3,7 @@ import java.io.*;
 public class Message implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private int seqNum;
+    private int sequenceNumber;
     private String src;
     private String dest;
     private String kind;
@@ -13,55 +13,64 @@ public class Message implements Serializable {
         this.dest = dest;
         this.kind = kind;
         this.data = data;
+        this.duplicate = false;
+
     }
 
-    public int getSeqNum() {
-        return seqNum;
+    public int get_seqNum() {
+        return sequenceNumber;
     }
 
-    public void setSeqNum(int seqNum) {
-        this.seqNum = seqNum;
+    public void set_seqNum(int sequenceNumber) {
+        this.sequenceNumber = sequenceNumber;
     }
 
-    public String getSrc() {
+    public String get_source() {
         return src;
     }
 
-    public void setSrc(String src) {
+    public void set_source(String src) {
         this.src = src;
     }
 
-    public String getDest() {
+    public String get_destination() {
         return dest;
     }
 
-    public void setDest(String dest) {
+    public void set_destination(String dest) {
         this.dest = dest;
     }
 
-    public String getKind() {
+    public String get_kind() {
         return kind;
     }
 
-    public void setKind(String kind) {
+    public void set_kind(String kind) {
         this.kind = kind;
     }
 
-    public Object getData() {
+    public Object get_data() {
         return data;
     }
 
-    public void setData(Object data) {
+    public void set_data(Object data) {
         this.data = data;
     }
 
 
+    public Boolean get_duplicate() {
+        return duplicate;
+    }
+
+    public void set_duplicate(boolean duplicate) {
+        this.duplicate = duplicate;
+    }
 
     @Override
     public String toString() {
-        return "From:" + this.getSrc() + " to:" + this.getDest() +
-               " Seq:" + this.getSeqNum() + " Kind:" + this.getKind()
-               + " Data:" + this.getData();
+        return "From:" + this.get_source() + " to:" + this.get_destinationt() +
+               " Seq:" + this.get_seqNum() + " Kind:" + this.get_kind()
+               + " Dup:" + this.get_duplicate() + " Data:" + this.get_data();
     }
 }
 
