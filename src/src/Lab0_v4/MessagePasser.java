@@ -24,6 +24,7 @@ public class MessagePasser {
 	
 	// GUI
 	public static JFrame mainFrame = null;
+	public static JTextField kindField = null;
 	public static JTextArea msgText = null;
 	public static JTextField msgLine = null;
 	public static JLabel statusBar = null;
@@ -282,6 +283,23 @@ public class MessagePasser {
 					myPortLabel.setText((new Integer(nodeME.port)).toString());
 					pane.add(myPortLabel);
 					infoPane.add(pane);
+					
+					
+			    // Set up the kind text area
+				JLabel emptyLabel = new JLabel();
+				emptyLabel.setText("____________________________________");
+				JLabel messageInfoLabel = new JLabel();
+				messageInfoLabel.setText("MESSAGE OPTIONS:");
+				JLabel kindLabel = new JLabel();
+				kindLabel.setText("Kind :");
+				kindLabel.setPreferredSize(new Dimension(150,30)); 
+				kindField = new JTextField();
+				kindField.setEnabled(false);
+				kindField.setPreferredSize(new Dimension(150,30)); 
+				infoPane.add(emptyLabel);
+				infoPane.add(messageInfoLabel);
+				infoPane.add(kindLabel);
+				infoPane.add(kindField);
 						
 				// Node List
 				JPanel nodeListPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
@@ -318,6 +336,7 @@ public class MessagePasser {
 		                  connectionStatus = CONNECTED;
 		                  nodeList.setEnabled(true);
 		                  msgLine.setEnabled(true);
+		                  kindField.setEnabled(true);
 		                  statusBar.setText("Connected");
 		                  mainFrame.repaint();
 		                  
@@ -340,6 +359,7 @@ public class MessagePasser {
 		                  receiveButton.setEnabled(false);
 		                  connectionStatus = DISCONNECTED;
 		                  nodeList.setEnabled(false);
+		                  kindField.setEnabled(false);
 		                  msgLine.setText(""); 
 		                  msgLine.setEnabled(false);
 		                  statusBar.setText("Disconnected");
@@ -394,10 +414,11 @@ public class MessagePasser {
 			            	   
 			            	   // Create message
 			            	   String destination = nodeList.getSelectedValue().toString();
-			            	   String kind = "ACK";
+			            	   String kind = kindField.getText();
 			            	   Object data = msgLine.getText();
 			            	   message = data.toString();
 			            	   msgLine.setText("");
+			            	   kindField.setText("");
 			            	   
 			            	   if (!message.equals("")) {
 				            	   Message theMessage = new Message(destination, kind, data);
@@ -427,7 +448,7 @@ public class MessagePasser {
 			      receiveButton.setEnabled(false);
 			      connectPane2.add(sendButton);
 			      connectPane2.add(receiveButton);
-			      infoPane.add(connectPane2);
+			      infoPane.add(connectPane2);		  
 			      
 			    // Set up the who label
 			    whoLabel = new JLabel();
