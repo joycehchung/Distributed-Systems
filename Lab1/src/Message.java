@@ -79,9 +79,12 @@ public class Message implements Serializable {
 
     @Override
     public String toString() {
-        return "From:" + this.get_source() + " to:" + this.get_destination() +
-               " Seq:" + this.get_seqNum() + " Kind:" + this.get_kind()
-               + " Dup:" + this.get_duplicate() + " Data:" + this.get_data();
+        return "From:" + this.get_source() + 
+        		" To:" + this.get_destination() +
+        		" Seq:" + this.get_seqNum() + 
+        		" Kind:" + this.get_kind() +
+        		" Dup:" + this.get_duplicate() + 
+        		" Data:" + this.get_data();
     }
 }
 
@@ -105,4 +108,14 @@ class TimeStampedMessage extends Message {
 		return this.timeStamp.equals(ts);
 	}
 	
+    @Override
+    public String toString() {
+        return	"From:" + this.get_source() + 
+        		" To:" + this.get_destination() +
+        		" TimeStamp:" + this.get_timeStamp() + 
+        		" Seq:" + this.get_seqNum() + 
+        		" Kind:" + this.get_kind() +
+        		" Dup:" + this.get_duplicate() + 
+        		" Data:" + this.get_data();
+    }
 }
