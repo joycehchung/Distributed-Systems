@@ -1,5 +1,4 @@
 import java.io.*;
-import java.sql.Timestamp;
 
 
 public class Message implements Serializable {
@@ -88,21 +87,21 @@ public class Message implements Serializable {
 
 class TimeStampedMessage extends Message {
 
-	Timestamp timeStamp;
+	TimeStamp timeStamp;
 	
 	public TimeStampedMessage(String dest, String kind, Object data) {
 		super(dest, kind, data);
 	}
 	
-	public void set_timeStamp(Timestamp ts) {
+	public void set_timeStamp(TimeStamp ts) {
 		this.timeStamp = ts;
 	}
 	
-	public Timestamp get_timeStamp() {
+	public TimeStamp get_timeStamp() {
 		return timeStamp;
 	}
 	
-	public boolean checkEquals(Timestamp ts) {
+	public boolean checkEquals(TimeStamp ts) {
 		return this.timeStamp.equals(ts);
 	}
 	
