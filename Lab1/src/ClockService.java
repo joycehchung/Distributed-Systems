@@ -1,6 +1,19 @@
-
+// ClockService implemented as a singleton
 public class ClockService {
-
+	   private static ClockService cs = null;
+	   
+	   protected ClockService() {}
+	   
+	   public static ClockService CreateClockService(String logical_or_vector) {
+	      if(cs == null) {
+	    	  if (logical_or_vector.equals("logical")) {
+	    		  cs = new Logical();
+	    	  } else if (logical_or_vector.equals("vector")) {
+	    		  cs = new Vector();
+	    	  }
+	      }
+	      return cs;
+	   }
 }
 
 class Logical extends ClockService {
