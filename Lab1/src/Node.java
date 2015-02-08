@@ -15,8 +15,8 @@ public class Node {
     public PrintWriter[] outbox = new PrintWriter[3];
     public BufferedReader[] inboxC = new BufferedReader[3];
     public PrintWriter[] outboxC = new PrintWriter[3];
-    public BlockingQueue<Message> receiveQueue = new LinkedBlockingQueue<Message>();
-    public BlockingQueue<Message> delayedReceiveQueue = new LinkedBlockingQueue<Message>();
-    public BlockingQueue<Message> delayedSendQueue = new LinkedBlockingQueue<Message>();
+    public BlockingQueue<TimeStampedMessage> receiveQueue = new LinkedBlockingQueue<TimeStampedMessage>();
+    public BlockingQueue<TimeStampedMessage> delayedReceiveQueue = new LinkedBlockingQueue<TimeStampedMessage>();
+    public BlockingQueue<TimeStampedMessage> delayedSendQueue = new LinkedBlockingQueue<TimeStampedMessage>();
 }
 

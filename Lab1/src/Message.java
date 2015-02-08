@@ -112,7 +112,7 @@ class TimeStampedMessage extends Message {
     public String toString() {
         return	"From:" + this.get_source() + 
         		" To:" + this.get_destination() +
-        		" TimeStamp:" + this.get_timeStamp() + 
+        		" TimeStamp:" + this.get_timeStamp().timeStamp + 
         		" Seq:" + this.get_seqNum() + 
         		" Kind:" + this.get_kind() +
         		" Dup:" + this.get_duplicate() + 

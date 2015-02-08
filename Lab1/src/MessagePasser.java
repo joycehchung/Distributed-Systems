@@ -50,6 +50,9 @@ public class MessagePasser {
     public static JLabel myNameLabel = null;
     public static JLabel myIpLabel = null;
     public static JLabel myPortLabel = null;
+    public static JButton logicalButton = null;
+    public static JButton vectorButton = null;
+    public static JButton timeStampButton = null;
     public static JButton connectButton = null;
     public static JButton disconnectButton = null;
     public static JButton sendButton = null;
@@ -57,6 +60,8 @@ public class MessagePasser {
     public static JLabel whoLabel = null;
     public static int connectionStatus = DISCONNECTED;
     public static ActionAdapter buttonListener = null;
+    public static ActionAdapter clockButtonListener = null;
+    public static ActionAdapter timeButtonListener = null;
     public static ListSelectionListener listListener = null;
     public static ActionAdapter messageButtonListener = null;
     
@@ -68,6 +73,9 @@ public class MessagePasser {
     public static Node nodeB = new Node(); 
     public static Node nodeC = new Node(); 
     public static Node nodeD = new Node();
+    
+    // ClockService
+    public static ClockService clockService = null;
     
     // Java Swing ActionAdapter class for handling events (like button presses)
     // Information from http://www.lamatek.com/lamasoft/javadocs/swingextras/com/lamatek/event/ActionAdapter.html
@@ -303,7 +311,7 @@ public class MessagePasser {
 	}
 	
 	// Check Rule function
-	public int CheckRule(Message message, int type) {
+	public int CheckRule(TimeStampedMessage message, int type) {
 	int ret = 0;
 	
 	ArrayList<Rule> rule_arr = null;
@@ -370,7 +378,7 @@ public class MessagePasser {
         // 	Node Information Pane
 	        JPanel pane = null;
 	        JPanel infoPane = new JPanel(new FlowLayout(FlowLayout.LEFT));
-	        infoPane.setPreferredSize(new Dimension(250, 500));
+	        infoPane.setPreferredSize(new Dimension(300, 500));
 	        pane = new JPanel(new FlowLayout(FlowLayout.LEFT));
 	        pane.setPreferredSize(new Dimension(250, 20));
 	        pane.add(new JLabel("My Name:"));
@@ -393,13 +401,13 @@ public class MessagePasser {
 	        pane.add(myPortLabel);
 	        infoPane.add(pane);
         
-        // 	Message Options Heading Text
+        // 	TimeStampedMessage Options Heading Text
 	        JLabel emptyLabel = new JLabel();
 	        emptyLabel.setText("____________________________________");
 	        JLabel messageInfoLabel = new JLabel();
 	        messageInfoLabel.setText("MESSAGE OPTIONS:");
 	        
-        // 	Message Kind Text Area
+        // 	TimeStampedMessage Kind Text Area
 	        JLabel kindLabel = new JLabel();
 	        kindLabel.setText("Kind :");
 	        kindLabel.setPreferredSize(new Dimension(150,30));
@@ -412,9 +420,9 @@ public class MessagePasser {
 	        infoPane.add(kindField);
         
         // 	Node List (of Nodes to send message to)
-	        JPanel nodeListPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+	        JPanel nodeListPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 	        nodeListPanel.setPreferredSize(new Dimension(250, 80));
-	        pane = new JPanel(new FlowLayout(FlowLayout.CENTER));
+	        pane = new JPanel(new FlowLayout(FlowLayout.LEFT));
 	        pane.setPreferredSize(new Dimension(250, 20));
 	        pane.add(new JLabel("Connected Nodes:"));
 	        infoPane.add(pane);
@@ -432,7 +440,65 @@ public class MessagePasser {
 	            }
 	        };
 	        nodeList.addListSelectionListener(listListener);
-        
+
+        //	Clock Pane and Logical/Vector Clock Radio Buttons
+	        JPanel clockPane = new JPanel(new FlowLayout(FlowLayout.LEFT));
+	        clockPane.setPreferredSize(new Dimension(250,30));
+			clockButtonListener = new ActionAdapter() {
+	            public void actionPerformed(ActionEvent e) {
+	            	if (e.getActionCommand().equals("logical")) {
+	            		clockService = ClockService.CreateClockService("logical");
+	            		connectButton.setEnabled(true);
+	            		timeStampButton.setEnabled(true);
+	            		logicalButton.setEnabled(false);
+	            		vectorButton.setEnabled(false);
+	            	} else if (e.getActionCommand().equals("vector")) {
+	            		clockService = ClockService.CreateClockService("vector");
+	            		connectButton.setEnabled(true);
+	            		timeStampButton.setEnabled(true);
+	            		logicalButton.setEnabled(false);
+	            		vectorButton.setEnabled(false);
+	            	} else {
+	            		System.err.println("Error in Clock selection");
+	            	}
+	            }
+		    };
+			logicalButton = new JButton("Logical Clock");
+			logicalButton.setPreferredSize(new Dimension(120, 30));
+			logicalButton.setActionCommand("logical");
+			logicalButton.addActionListener(clockButtonListener);
+			logicalButton.setEnabled(true);
+			vectorButton = new JButton("Vector Clock");
+			vectorButton.setPreferredSize(new Dimension(120, 30));
+			vectorButton.setActionCommand("vector");
+			vectorButton.addActionListener(clockButtonListener);
+			vectorButton.setEnabled(true);
+			clockPane.add(logicalButton);
+			clockPane.add(vectorButton);
+			infoPane.add(clockPane);
+			
+	        JPanel timePane = new JPanel(new FlowLayout(FlowLayout.LEFT));
+	        timePane.setPreferredSize(new Dimension(250,30));
+	        JLabel timeLabel = new JLabel();
+	        timeLabel.setText("TimeStamp :");
+	        timeLabel.setPreferredSize(new Dimension(250,30));
+			timeButtonListener = new ActionAdapter() {
+	            public void actionPerformed(ActionEvent e) {
+	            	if (e.getActionCommand().equals("timestamp")) {
+	            		timeLabel.setText("TimeStamp: " + clockService.get_timeStamp().timeStamp);
+	            		// Can add this back if we want this to be an event
+	            		//clockService.updateTimeStamp();
+	            	}
+	            }
+		    };
+			timeStampButton = new JButton("Get TimeStamp");
+			timeStampButton.setPreferredSize(new Dimension(250, 30));
+			timeStampButton.setActionCommand("timestamp");
+			timeStampButton.addActionListener(timeButtonListener);
+			timeStampButton.setEnabled(false);
+			infoPane.add(timeLabel);
+			infoPane.add(timeStampButton);
+	        
         //	Begin/End Connections Button
 	        JPanel connectPane = new JPanel(new FlowLayout(FlowLayout.LEFT));
 	        connectPane.setPreferredSize(new Dimension(250,30));
@@ -506,7 +572,7 @@ public class MessagePasser {
 	        connectButton.setPreferredSize(new Dimension(100, 30));
 	        connectButton.setActionCommand("connect");
 	        connectButton.addActionListener(buttonListener);
-	        connectButton.setEnabled(true);
+	        connectButton.setEnabled(false);
 	        disconnectButton = new JButton("Go Offline");
 			disconnectButton.setPreferredSize(new Dimension(100, 30));
 			disconnectButton.setActionCommand("disconnect");
@@ -516,7 +582,7 @@ public class MessagePasser {
 			connectPane.add(disconnectButton);
 			infoPane.add(connectPane);
         
-        // 	Send/Receive Message Button
+        // 	Send/Receive TimeStampedMessage Button
 			JPanel connectPane2 = new JPanel(new FlowLayout(FlowLayout.LEFT));
 			connectPane2.setPreferredSize(new Dimension(250,30));
 	        messageButtonListener = new ActionAdapter() {
@@ -524,11 +590,12 @@ public class MessagePasser {
 	                // Send message
 	                if (e.getActionCommand().equals("send")) {
 	                    // Create message
-	                	Message theMessage = new Message(selectedName, kindField.getText(), msgLine.getText());
+	                	TimeStampedMessage theMessage = new TimeStampedMessage(selectedName, kindField.getText(), msgLine.getText());
                         theMessage.set_seqNum(sequenceNumber); 
                         sequenceNumber++;
                         theMessage.set_source(nodeME.name);
                         theMessage.set_nodeIndex(GetSendNodeIndex(selectedName));
+                        theMessage.set_timeStamp(clockService.get_sendTimeStamp());
 	                    // Clear GUI text fields
 	                    msgLine.setText("");
 	                    kindField.setText("");
@@ -590,7 +657,7 @@ public class MessagePasser {
 	        mainFrame.setVisible(true);
 	} 
 	
-    // Message Passer constructor
+    // TimeStampedMessage Passer constructor
     public MessagePasser(String configuration_filename, String local_name) {
 
     	// Load information from configuration file
@@ -631,8 +698,10 @@ public class MessagePasser {
     }
     
     // Send message function
-    public void send(Message theMessage) {
-    	System.out.println("Message is: " + theMessage.toString() + " to " + theMessage.get_nodeIndex());
+    public void send(TimeStampedMessage theMessage) {
+    	System.out.println("TimeStampedMessage is: " + theMessage.toString() + " to " + theMessage.get_nodeIndex());
+    	// Update clock
+		clockService.updateTimeStamp();
         // Check send rules and perform specified actions
         sendRule = CheckRule(theMessage, CHECKSEND);
         if (sendRule == DROP) {
@@ -666,7 +735,7 @@ public class MessagePasser {
     }
     
     // Send message from send queue
-    public void DoSend(Message theMessage) {
+    public void DoSend(TimeStampedMessage theMessage) {
     	
         // Show message to be sent in history panel
         msgText.append("\nSENT to " + theMessage.get_nodeIndex() + " = " + 
@@ -711,22 +780,23 @@ public class MessagePasser {
     }
     
     // Parse message function
-    public Message ParseMessage(String msg) {
-    	// Parse line read from BufferedReader to get Message
+    public TimeStampedMessage ParseMessage(String msg) {
+    	// Parse line read from BufferedReader to get TimeStampedMessage
         String dest = null;
         String src = null;
         int sNum = 0;
         String knd = null;
         Object dta = null;
+        TimeStamp ts = new TimeStamp();
         boolean dup = false;
-        Message gotMessage = new Message(dest, knd, dta);
-        
-        System.out.println(msg);
-        dest = msg.substring(msg.indexOf("to:")+3, msg.indexOf(" Seq:"));
-        src = msg.substring(5, msg.indexOf(" to:"));
+        TimeStampedMessage gotMessage = new TimeStampedMessage(dest, knd, dta);
+      
+        src = msg.substring(5, msg.indexOf(" To:"));
+        dest = msg.substring(msg.indexOf("To:")+3, msg.indexOf(" TimeStamp:"));
+        ts.timeStamp = Integer.parseInt(msg.substring(msg.indexOf("TimeStamp:")+10, msg.indexOf(" Seq:")));
         sNum = Integer.parseInt(msg.substring(msg.indexOf("Seq:")+4, msg.indexOf(" Kind:")));
         knd = msg.substring(msg.indexOf("Kind:")+5, msg.indexOf(" Dup:"));
-        dup = Boolean.parseBoolean(msg.substring(msg.indexOf("Dup:")+4, msg.indexOf("Data:")));
+        dup = Boolean.parseBoolean(msg.substring(msg.indexOf("Dup:")+4, msg.indexOf(" Data:")));
         dta = msg.substring(msg.indexOf("Data:")+5, msg.length());
         gotMessage.set_destination(dest);
         gotMessage.set_source(src);
@@ -734,12 +804,13 @@ public class MessagePasser {
         gotMessage.set_kind(knd);
         gotMessage.set_data(dta);
         gotMessage.set_duplicate(dup);
+        gotMessage.set_timeStamp(ts);
         
         return gotMessage;
     }
     
     // Apply message receive rule
-    public void DoReceiveRule(Message gotMessage, int receiveRule) {
+    public void DoReceiveRule(TimeStampedMessage gotMessage, int receiveRule) {
         if (receiveRule == NONE) {
         	nodeME.receiveQueue.add(gotMessage);
             receiveDelay = 0;
@@ -759,11 +830,11 @@ public class MessagePasser {
     }
     
     // Receive message function
-    public Message receive() {
-    	Message gotMessage = null;
+    public TimeStampedMessage receive() {
+    	TimeStampedMessage gotMessage = null;
         try {
             if (nodeME.inbox[0] != null && nodeME.inbox[0].ready()) {
-            	// Get message and parse from string to Message
+            	// Get message and parse from string to TimeStampedMessage
             	gotMessage = ParseMessage(nodeME.inbox[0].readLine());
                 // Check receive rule
                 receiveRule = CheckRule(gotMessage, CHECKRECEIVE);
@@ -772,7 +843,7 @@ public class MessagePasser {
             }
             
             if (nodeME.inbox[1] != null && nodeME.inbox[1].ready()) {
-            	// Get message and parse from string to Message
+            	// Get message and parse from string to TimeStampedMessage
             	gotMessage = ParseMessage(nodeME.inbox[1].readLine());
                 // Check receive rule
                 receiveRule = CheckRule(gotMessage, CHECKRECEIVE);
@@ -781,7 +852,7 @@ public class MessagePasser {
             }
             
             if (nodeME.inbox[2] != null && nodeME.inbox[2].ready()) {
-            	// Get message and parse from string to Message
+            	// Get message and parse from string to TimeStampedMessage
             	gotMessage = ParseMessage(nodeME.inbox[2].readLine());
                 // Check receive rule
                 receiveRule = CheckRule(gotMessage, CHECKRECEIVE);
@@ -790,7 +861,7 @@ public class MessagePasser {
             }
             
             if (nodeME.inboxC[0] != null && nodeME.inboxC[0].ready()) {
-            	// Get message and parse from string to Message
+            	// Get message and parse from string to TimeStampedMessage
             	gotMessage = ParseMessage(nodeME.inboxC[0].readLine());
                 // Check receive rule
                 receiveRule = CheckRule(gotMessage, CHECKRECEIVE);
@@ -799,7 +870,7 @@ public class MessagePasser {
             } 
             
             if (nodeME.inboxC[1] != null && nodeME.inboxC[1].ready()) {
-            	// Get message and parse from string to Message
+            	// Get message and parse from string to TimeStampedMessage
             	gotMessage = ParseMessage(nodeME.inboxC[1].readLine());
                 // Check receive rule
                 receiveRule = CheckRule(gotMessage, CHECKRECEIVE);
@@ -808,7 +879,7 @@ public class MessagePasser {
             }
             
             if (nodeME.inboxC[2] != null && nodeME.inboxC[2].ready()) {
-            	// Get message and parse from string to Message
+            	// Get message and parse from string to TimeStampedMessage
             	gotMessage = ParseMessage(nodeME.inboxC[2].readLine());
                 // Check receive rule
                 receiveRule = CheckRule(gotMessage, CHECKRECEIVE);
@@ -820,6 +891,8 @@ public class MessagePasser {
             if (!nodeME.receiveQueue.isEmpty()) {
 	            try {
 					gotMessage = nodeME.receiveQueue.take();
+					// Update clock after message received
+					clockService.set_receiveTimeStamp(gotMessage.timeStamp);
 		            msgText.append(gotMessage.toString() + "\n");
 				} catch (InterruptedException e) {
 					e.printStackTrace();
@@ -831,6 +904,8 @@ public class MessagePasser {
 	                for (int k=0; k < nodeME.delayedReceiveQueue.size(); k++) {
 	                	try {
 							gotMessage = nodeME.delayedReceiveQueue.take();
+							// Update clock after message received
+							clockService.set_receiveTimeStamp(gotMessage.timeStamp);
 		                    msgText.append(gotMessage.toString() + "\n");
 		                    mainFrame.repaint();
 						} catch (InterruptedException e) {

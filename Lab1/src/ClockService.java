@@ -14,33 +14,49 @@ public class ClockService {
 	      }
 	      return cs;
 	   }
+	   
+		//*** Methods that will be overridden by Logical or Vector subclass methods: ***//
+			// Call this method to increment process timestamp between every successive event
+			protected void updateTimeStamp() { }
+		    
+			// Get timestamp for message (received)
+			protected void set_receiveTimeStamp(TimeStamp ts) { }
+			
+			// Get timestamp for message (sent)
+			protected TimeStamp get_sendTimeStamp() { return null; }
+			
+			// Get timestamp for non-message
+			protected TimeStamp get_timeStamp() { return null; }
 }
 
 class Logical extends ClockService {
     private int d;
-    private TimeStamp ts;
+    private TimeStamp ts = new TimeStamp();
     
     public Logical() {
         this.d = 1;
         this.ts.timeStamp = 0;
     }
 
+    @ Override
     // Call this method to increment process timestamp between every successive event
     public void updateTimeStamp() {
         this.ts.timeStamp += this.d;
     }
     
-    // Get timestamp for message (received)
-    public TimeStamp get_receiveTimeStamp(TimeStamp ts) {
+    @ Override
+    // Set / Update timestamp when message received
+    public void set_receiveTimeStamp(TimeStamp ts) {
     	this.ts.timeStamp = Math.max(this.ts.timeStamp, ts.timeStamp) + this.d;
-    	return this.ts;
     }
     
+    @ Override
     // Get timestamp for message (sent)
     public TimeStamp get_sendTimeStamp() {
     	return ts;
     }
     
+    @ Override
     // Get timestamp for non-message
     public TimeStamp get_timeStamp() {
     	return ts;
