@@ -26,28 +26,29 @@ public class ClockService {
 			protected TimeStamp get_sendTimeStamp() { return null; }
 			
 			// Get timestamp for non-message
-			protected TimeStamp get_timeStamp() { return null; }
+			protected TimeStamp get_clockTimeStamp() { return null; }
 }
 
 class Logical extends ClockService {
     private int d;
-    private TimeStamp ts = new TimeStamp();
+    private TimeStamp ts;
     
     public Logical() {
         this.d = 1;
-        this.ts.timeStamp = 0;
+        this.ts = new TimeStamp();
+        this.ts.timeStamp = String.valueOf(1);
     }
 
     @ Override
     // Call this method to increment process timestamp between every successive event
     public void updateTimeStamp() {
-        this.ts.timeStamp += this.d;
+        this.ts.timeStamp = String.valueOf(Integer.parseInt(this.ts.timeStamp) + this.d);
     }
     
     @ Override
     // Set / Update timestamp when message received
     public void set_receiveTimeStamp(TimeStamp ts) {
-    	this.ts.timeStamp = Math.max(this.ts.timeStamp, ts.timeStamp) + this.d;
+    	this.ts.timeStamp = String.valueOf(Math.max(Integer.parseInt(this.ts.timeStamp), Integer.parseInt(ts.timeStamp)) + this.d);
     }
     
     @ Override
@@ -58,7 +59,7 @@ class Logical extends ClockService {
     
     @ Override
     // Get timestamp for non-message
-    public TimeStamp get_timeStamp() {
+    public TimeStamp get_clockTimeStamp() {
     	return ts;
     }
 }

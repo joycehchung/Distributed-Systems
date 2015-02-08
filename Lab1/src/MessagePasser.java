@@ -318,47 +318,47 @@ public class MessagePasser {
 	
 	// Check Rule function
 	public int CheckRule(TimeStampedMessage message, int type) {
-	int ret = 0;
-	
-	ArrayList<Rule> rule_arr = null;
-	if(type == 0)
-		rule_arr = SendRules;
-	else if(type == 1)
-		rule_arr = ReceiveRules;
-	else
-	{
-		System.err.println("error use of CheckRule with type = " + type);
-		System.exit(1);
-	}
-	for(Rule rule: rule_arr)
-	{
-		if((rule.get_source() != null) && !(rule.get_source().equals(message.get_source())))
-			continue;
-		else if((rule.get_destination() != null) && !(rule.get_destination().equals(message.get_destination())))
-			continue;
-		else if((rule.get_kind() != null) && !(rule.get_kind().equals(message.get_kind())))
-			continue;
-		else if((rule.get_seqNum() != null) && !(rule.get_seqNum().equals(message.get_seqNum())))
-			continue;
-
-
-
-		rule.addMatch(); // already matched rule!
-		// Get rule action
-		if (rule.get_action().equals("drop")) {
-			ret = 1;
-		} else if (rule.get_action().equals("duplicate")) {
-			ret = 2;
-		} else if (rule.get_action().equals("delay")) {
-			ret = 3;
-		} else {
-			ret = 0;
+		int ret = 0;
+		
+		ArrayList<Rule> rule_arr = null;
+		if(type == 0)
+			rule_arr = SendRules;
+		else if(type == 1)
+			rule_arr = ReceiveRules;
+		else
+		{
+			System.err.println("error use of CheckRule with type = " + type);
+			System.exit(1);
 		}
-		System.out.println("RULE: " + rule.toString());
-		return (ret);  // match this rule
-	}
-	return (0);  // if no rules match, return null
-}	
+		for(Rule rule: rule_arr)
+		{
+			if((rule.get_source() != null) && !(rule.get_source().equals(message.get_source())))
+				continue;
+			else if((rule.get_destination() != null) && !(rule.get_destination().equals(message.get_destination())))
+				continue;
+			else if((rule.get_kind() != null) && !(rule.get_kind().equals(message.get_kind())))
+				continue;
+			else if((rule.get_seqNum() != null) && !(rule.get_seqNum().equals(message.get_seqNum())))
+				continue;
+	
+	
+	
+			rule.addMatch(); // already matched rule!
+			// Get rule action
+			if (rule.get_action().equals("drop")) {
+				ret = 1;
+			} else if (rule.get_action().equals("duplicate")) {
+				ret = 2;
+			} else if (rule.get_action().equals("delay")) {
+				ret = 3;
+			} else {
+				ret = 0;
+			}
+			System.out.println("RULE: " + rule.toString());
+			return (ret);  // match this rule
+		}
+		return (0);  // if no rules match, return null
+	}	
 
 	// Get send node index
 	public int GetSendNodeIndex(String name) {
@@ -494,7 +494,7 @@ public class MessagePasser {
 			timeButtonListener = new ActionAdapter() {
 	            public void actionPerformed(ActionEvent e) {
 	            	if (e.getActionCommand().equals("timestamp")) {
-	            		timeLabel.setText("TimeStamp: " + clockService.get_timeStamp().timeStamp);
+	            		timeLabel.setText("TimeStamp: " + clockService.get_clockTimeStamp().timeStamp);
 	            		// Can add this back if we want this to be an event
 	            		//clockService.updateTimeStamp();
 	            	}
@@ -740,9 +740,10 @@ public class MessagePasser {
     
     // Send message function
     public void send(TimeStampedMessage theMessage) {
-    	System.out.println("TimeStampedMessage is: " + theMessage.toString() + " to " + theMessage.get_nodeIndex());
+    	System.out.println("1TimeStampedMessage is: " + theMessage.toString() + " to " + theMessage.get_nodeIndex() + " " + clockService.get_clockTimeStamp().timeStamp);
     	// Update clock
 		clockService.updateTimeStamp();
+		System.out.println("2TimeStampedMessage is: " + theMessage.toString() + " to " + theMessage.get_nodeIndex() + " " + clockService.get_clockTimeStamp().timeStamp);
         // Check send rules and perform specified actions
         sendRule = CheckRule(theMessage, CHECKSEND);
         if (sendRule == DROP) {
@@ -777,11 +778,8 @@ public class MessagePasser {
     
     // Send message from send queue
     public void DoSend(TimeStampedMessage theMessage) {
-    	
         // Show message to be sent in history panel
-        msgText.append("\nSENT to " + theMessage.get_nodeIndex() + " = " + 
-		        theMessage.get_destination() + 
-		        " > " + theMessage.toString() + "\n");
+        msgText.append("\nSENT to " + theMessage.get_destination() + " > " + theMessage.toString() + "\n");
         
         // Send message out through PrintWriter and the appropriate socket (nodeIndex) 
         int nodeIndex = theMessage.get_nodeIndex();
@@ -834,7 +832,7 @@ public class MessagePasser {
       
         src = msg.substring(5, msg.indexOf(" To:"));
         dest = msg.substring(msg.indexOf("To:")+3, msg.indexOf(" TimeStamp:"));
-        ts.timeStamp = Integer.parseInt(msg.substring(msg.indexOf("TimeStamp:")+10, msg.indexOf(" Seq:")));
+        ts.timeStamp = msg.substring(msg.indexOf("TimeStamp:")+10, msg.indexOf(" Seq:"));
         sNum = Integer.parseInt(msg.substring(msg.indexOf("Seq:")+4, msg.indexOf(" Kind:")));
         knd = msg.substring(msg.indexOf("Kind:")+5, msg.indexOf(" Dup:"));
         dup = Boolean.parseBoolean(msg.substring(msg.indexOf("Dup:")+4, msg.indexOf(" Data:")));
@@ -933,7 +931,7 @@ public class MessagePasser {
 		            try {
 						gotMessage = nodeME.receiveQueue.take();
 						// Update clock after message received
-						clockService.set_receiveTimeStamp(gotMessage.timeStamp);
+						clockService.set_receiveTimeStamp(gotMessage.get_timeStamp());
 			            msgText.append(gotMessage.toString() + "\n");
 			            currentMessage = gotMessage;
 			            mainFrame.repaint();
@@ -948,7 +946,7 @@ public class MessagePasser {
 		                	try {
 								gotMessage = nodeME.delayedReceiveQueue.take();
 								// Update clock after message received
-								clockService.set_receiveTimeStamp(gotMessage.timeStamp);
+								clockService.set_receiveTimeStamp(gotMessage.get_timeStamp());
 			                    msgText.append(gotMessage.toString() + "\n");
 			                    currentMessage = gotMessage;
 			                    mainFrame.repaint();
@@ -970,7 +968,7 @@ public class MessagePasser {
     
     public static void main(String[] args) {
         //new MessagePasser(args[0], args[1]);
-    	new MessagePasser("config","bob");
+    	new MessagePasser("config","charlie");
     }
 
 }

@@ -90,22 +90,22 @@ public class Message implements Serializable {
 
 class TimeStampedMessage extends Message {
 
-	TimeStamp timeStamp;
+	private TimeStamp msgTimeStamp;
 	
 	public TimeStampedMessage(String dest, String kind, Object data) {
 		super(dest, kind, data);
 	}
 	
 	public void set_timeStamp(TimeStamp ts) {
-		this.timeStamp = ts;
+		this.msgTimeStamp = ts;
 	}
 	
 	public TimeStamp get_timeStamp() {
-		return timeStamp;
+		return msgTimeStamp;
 	}
 	
 	public boolean checkEquals(TimeStamp ts) {
-		return this.timeStamp.equals(ts);
+		return this.msgTimeStamp.equals(ts);
 	}
 	
     @Override

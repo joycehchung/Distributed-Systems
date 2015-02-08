@@ -1,15 +1,16 @@
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
-import java.util.concurrent.*;
-
 import javax.swing.*;
 import javax.swing.Timer;
 
 
 public class Logger {
 	public MessagePasser logger_MP = null;
+	
+	// Logger Message Queue
 	public PriorityQueue<TimeStampedMessage> logQueue = null;
+	public TimeStampedMessage message = null;
 	
 	// GUI
     public static JFrame mainFrame = null;
@@ -18,14 +19,12 @@ public class Logger {
     public static JToggleButton receiveButton = null;
     public static ActionAdapter buttonListener = null;
     public static Timer timer = null;
+    public static class ActionAdapter implements ActionListener { public void actionPerformed(ActionEvent e) {} }
     
-    public static class ActionAdapter implements ActionListener {
-        public void actionPerformed(ActionEvent e) {}
-    }
-	
-    public TimeStampedMessage message = null;
+    // Comparing Timestamps
     
-    //Comparator implementation
+    
+    // Priority Queue Comparator for sorting
     public static Comparator<TimeStampedMessage> timeStampComparator = new Comparator<TimeStampedMessage>(){
          
         @Override
@@ -38,6 +37,15 @@ public class Logger {
         }
     };
     
+//    // Get || and -> relationships
+//    public String GetRelationship(TimeStampedMessage msg) {
+//		  String data = msg.get_data().toString();
+//		  int data_ts = Integer.parseInt(data.substring(data.indexOf("TimeStamp:")+10, data.indexOf(" Seq:")));
+//		  int ts = msg.get_timeStamp().timeStamp; // Timestamp of sender
+//		  
+//		  return(data_ts + "		" + data +"\n");
+//    }
+//    
 	public Logger() {
 		logger_MP = new MessagePasser("config", "logger");
 		logQueue = new PriorityQueue<TimeStampedMessage>(10, timeStampComparator);
@@ -70,7 +78,7 @@ public class Logger {
 						message = logger_MP.nodeME.receiveQueue.take();
 		            	logQueue.add(message);
 						// Update clock after message received
-						logger_MP.clockService.set_receiveTimeStamp(message.timeStamp);
+						logger_MP.clockService.set_receiveTimeStamp(message.get_timeStamp());
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
@@ -81,7 +89,7 @@ public class Logger {
 		                		message = logger_MP.nodeME.delayedReceiveQueue.take();
 		                		logQueue.add(message);
 								// Update clock after message received
-		                		logger_MP.clockService.set_receiveTimeStamp(message.timeStamp);
+		                		logger_MP.clockService.set_receiveTimeStamp(message.get_timeStamp());
 							} catch (InterruptedException e) {
 								e.printStackTrace();
 							}
@@ -103,14 +111,14 @@ public class Logger {
             	  receiveButton.setText("Receive Log Messages");
             	  // Show updated log
             	  msgText.setText("");
-            	  msgText.append("TimeStamp        Message\n");
+            	  msgText.append("TimeStamp		Message\n");
             	  msgText.append("---------------------------------------------------------\n");
             	  
             	  for (int i=0; i<logQueue.size(); i++) {
             		  TimeStampedMessage ts_msg = (TimeStampedMessage) logQueue.toArray()[i];
             		  String msg = ts_msg.get_data().toString();
             		  int ts = Integer.parseInt(msg.substring(msg.indexOf("TimeStamp:")+10, msg.indexOf(" Seq:")));
-            		  msgText.append(ts + "        " + msg +"\n");
+            		  msgText.append(ts + "		" + msg +"\n");
             	  }
               }
            }
