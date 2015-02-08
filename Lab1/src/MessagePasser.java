@@ -516,12 +516,6 @@ public class MessagePasser {
 			                  disconnectButton.setEnabled(true);
 			                  connectionStatus = CONNECTED;
 			                  statusBar.setText("Connected");
-			                  sendButton.setEnabled(true); 
-			                  receiveButton.setEnabled(true);
-			                  logButton.setEnabled(true);
-			                  nodeList.setEnabled(true);
-			                  msgLine.setEnabled(true);
-			                  kindField.setEnabled(true);
 			                  mainFrame.repaint();
 			                  
 			                  // Connect Function
@@ -532,6 +526,23 @@ public class MessagePasser {
 			                  
 			                  // Receive messages indicating identities
 			                  ReceiveInformation();
+			                  
+			                  if (nodeME.name.equals("logger")) {
+				                  sendButton.setEnabled(false); 
+				                  receiveButton.setEnabled(false);
+				                  logButton.setEnabled(false);
+				                  nodeList.setEnabled(false);
+				                  msgLine.setEnabled(false);
+				                  kindField.setEnabled(false);
+			                  } else {
+				                  sendButton.setEnabled(true); 
+				                  receiveButton.setEnabled(true);
+				                  logButton.setEnabled(true);
+				                  nodeList.setEnabled(true);
+				                  msgLine.setEnabled(true);
+				                  kindField.setEnabled(true);
+			                  }
+			                  
 			                  mainFrame.repaint();
 	                }
 	                
@@ -691,11 +702,7 @@ public class MessagePasser {
 
     // Send message function
     public void send(final TimeStampedMessage theMessage) {
-    	//System.out.println("1TimeStampedMessage is: " + theMessage.toString() + " to " + theMessage.get_nodeIndex() + " " + clockService.get_clockTimeStamp().ts);
-    	// Update clock
-		//clockService.updateTimeStamp();
-		//System.out.println("2TimeStampedMessage is: " + theMessage.toString() + " to " + theMessage.get_nodeIndex() + " " + clockService.get_clockTimeStamp().ts);
-        // Check send rules and perform specified actions
+
         sendRule = CheckRule(theMessage, CHECKSEND);
         if (sendRule == DROP) {
             // Don't add the message to the send queue
@@ -890,7 +897,7 @@ public class MessagePasser {
             	msg = nodeME.receiveQueue.take();
 				// Update clock after message received
 				clockService.set_receiveTimeStamp(msg.get_timeStamp());
-	            msgText.append(msg.toString() + "\n");
+	            msgText.append("\n" + msg.toString() + "\n");
 	            currentMessage = msg;
 	            mainFrame.repaint();
 			} catch (InterruptedException e) {
@@ -905,7 +912,7 @@ public class MessagePasser {
                 		msg = nodeME.delayedReceiveQueue.take();
 						// Update clock after message received
 						clockService.set_receiveTimeStamp(msg.get_timeStamp());
-	                    msgText.append(msg.toString() + "\n");
+	                    msgText.append("\n" + msg.toString() + "\n");
 	                    currentMessage = msg;
 	                    mainFrame.repaint();
 					} catch (InterruptedException e) {
