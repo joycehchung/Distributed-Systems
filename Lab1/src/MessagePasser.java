@@ -57,6 +57,7 @@ public class MessagePasser {
     public static JButton disconnectButton = null;
     public static JButton sendButton = null;
     public static JButton receiveButton = null;
+    public static JButton logButton = null;
     public static JLabel whoLabel = null;
     public static int connectionStatus = DISCONNECTED;
     public static ActionAdapter buttonListener = null;
@@ -76,6 +77,11 @@ public class MessagePasser {
     
     // ClockService
     public static ClockService clockService = null;
+    
+    // Logging
+    public static TimeStampedMessage currentMessage = null;
+    public static TimeStampedMessage logMessage = null;
+    public static boolean yes_logger;
     
     // Java Swing ActionAdapter class for handling events (like button presses)
     // Information from http://www.lamatek.com/lamasoft/javadocs/swingextras/com/lamatek/event/ActionAdapter.html
@@ -401,6 +407,7 @@ public class MessagePasser {
 	        pane.add(myPortLabel);
 	        infoPane.add(pane);
         
+        if (!yes_logger) {
         // 	TimeStampedMessage Options Heading Text
 	        JLabel emptyLabel = new JLabel();
 	        emptyLabel.setText("____________________________________");
@@ -440,7 +447,8 @@ public class MessagePasser {
 	            }
 	        };
 	        nodeList.addListSelectionListener(listListener);
-
+        }
+        
         //	Clock Pane and Logical/Vector Clock Radio Buttons
 	        JPanel clockPane = new JPanel(new FlowLayout(FlowLayout.LEFT));
 	        clockPane.setPreferredSize(new Dimension(250,30));
@@ -463,6 +471,7 @@ public class MessagePasser {
 	            	}
 	            }
 		    };
+		    //** UPDATE TO ONLY ALLOW ONE FOR LOGGER
 			logicalButton = new JButton("Logical Clock");
 			logicalButton.setPreferredSize(new Dimension(120, 30));
 			logicalButton.setActionCommand("logical");
@@ -509,13 +518,16 @@ public class MessagePasser {
 	                if (e.getActionCommand().equals("connect")) {
 			                  connectButton.setEnabled(false);
 			                  disconnectButton.setEnabled(true);
-			                  sendButton.setEnabled(true);
-			                  receiveButton.setEnabled(true);
 			                  connectionStatus = CONNECTED;
-			                  nodeList.setEnabled(true);
-			                  msgLine.setEnabled(true);
-			                  kindField.setEnabled(true);
 			                  statusBar.setText("Connected");
+			                  if (!yes_logger) {
+			                	 sendButton.setEnabled(true); 
+			                	 receiveButton.setEnabled(true);
+			                	 logButton.setEnabled(true);
+			                	 nodeList.setEnabled(true);
+			                	 msgLine.setEnabled(true);
+			                	 kindField.setEnabled(true);
+			                  }
 			                  mainFrame.repaint();
 			                  
 			                  // Connect Function
@@ -533,14 +545,17 @@ public class MessagePasser {
 	                else {
 			                  connectButton.setEnabled(true);
 			                  disconnectButton.setEnabled(false);
-			                  sendButton.setEnabled(false);
-			                  receiveButton.setEnabled(false);
 			                  connectionStatus = DISCONNECTED;
-			                  nodeList.setEnabled(false);
-			                  kindField.setEnabled(false);
-			                  msgLine.setText("");
-			                  msgLine.setEnabled(false);
 			                  statusBar.setText("Disconnected");
+			                  if (!yes_logger) {
+				                  sendButton.setEnabled(false);
+				                  receiveButton.setEnabled(false);
+				                  logButton.setEnabled(false);
+				                  nodeList.setEnabled(false);
+				                  kindField.setEnabled(false);
+				                  msgLine.setText("");
+				                  msgLine.setEnabled(false);
+			                  }
 			                  mainFrame.repaint();
 			                  
 			                  // Close up everything
@@ -582,6 +597,7 @@ public class MessagePasser {
 			connectPane.add(disconnectButton);
 			infoPane.add(connectPane);
         
+		if (!yes_logger) {
         // 	Send/Receive TimeStampedMessage Button
 			JPanel connectPane2 = new JPanel(new FlowLayout(FlowLayout.LEFT));
 			connectPane2.setPreferredSize(new Dimension(250,30));
@@ -599,34 +615,54 @@ public class MessagePasser {
 	                    // Clear GUI text fields
 	                    msgLine.setText("");
 	                    kindField.setText("");
+	                    currentMessage = theMessage;
 	                    send(theMessage);
 	                    mainFrame.repaint();
 	                // Receive message
 	                } else if (e.getActionCommand().equals("receive")){
 	                    receive();
 	                    mainFrame.repaint();
+                    // Log message
+	                } else if (e.getActionCommand().equals("log")){
+	                	logMessage = new TimeStampedMessage("logger", currentMessage.get_kind(), currentMessage.toString());
+	                	logMessage.set_seqNum(sequenceNumber); 
+                        sequenceNumber++;
+                        logMessage.set_source(nodeME.name);
+                        logMessage.set_nodeIndex(GetSendNodeIndex("logger"));
+                        logMessage.set_timeStamp(clockService.get_sendTimeStamp());
+	                    DoSend(logMessage);
+	                    // Update clock
+	            		clockService.updateTimeStamp();
+	                    mainFrame.repaint();
 	                }
 	            }
 	        };
 	        sendButton = new JButton("Send");
-	        sendButton.setPreferredSize(new Dimension(100, 30));
+	        sendButton.setPreferredSize(new Dimension(80, 30));
 	        sendButton.setActionCommand("send");
 	        sendButton.addActionListener(messageButtonListener);
 	        sendButton.setEnabled(false);
 	        receiveButton = new JButton("Receive");
-	        receiveButton.setPreferredSize(new Dimension(100, 30));
+	        receiveButton.setPreferredSize(new Dimension(80, 30));
 	        receiveButton.setActionCommand("receive");
 	        receiveButton.addActionListener(messageButtonListener);
 	        receiveButton.setEnabled(false);
+	        logButton = new JButton("Log");
+	        logButton.setPreferredSize(new Dimension(70, 30));
+	        logButton.setActionCommand("log");
+	        logButton.addActionListener(messageButtonListener);
+	        logButton.setEnabled(false);
 	        connectPane2.add(sendButton);
 	        connectPane2.add(receiveButton);
+	        connectPane2.add(logButton);
 	        infoPane.add(connectPane2);
-        
+		
         // 	Set up the who label
 	        whoLabel = new JLabel();
 	        whoLabel.setText("Messages History :");
 	        whoLabel.setPreferredSize(new Dimension(50,20));
-        
+		}
+		
         // 	Set up the message pane
 	        JPanel messagePane = new JPanel(new BorderLayout());
 	        msgText = new JTextArea(10, 20);
@@ -634,12 +670,14 @@ public class MessagePasser {
 	        msgText.setEditable(false);
 	        msgText.setForeground(Color.blue);
 	        JScrollPane msgTextPane = new JScrollPane(msgText, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        if (!yes_logger) {
 	        msgLine = new JTextField();
 	        msgLine.setEnabled(false);
 	        msgLine.setPreferredSize(new Dimension(150,30));
-	        messagePane.add(msgTextPane, BorderLayout.CENTER);
 	        messagePane.add(whoLabel, BorderLayout.PAGE_START);
 	        messagePane.add(msgLine, BorderLayout.PAGE_END);
+        }
+	        messagePane.add(msgTextPane, BorderLayout.CENTER);
 	        
         // 	Set up the main pane
 	        JPanel mainPane = new JPanel(new BorderLayout());
@@ -648,7 +686,7 @@ public class MessagePasser {
 	        mainPane.add(messagePane, BorderLayout.CENTER);
         
         // 	Set up the main frame
-	        mainFrame = new JFrame("Distributed Systems: Lab 0");
+	        mainFrame = new JFrame("Distributed Systems: Lab 1");
 	        mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	        mainFrame.setContentPane(mainPane);
 	        mainFrame.setSize(mainFrame.getPreferredSize());
@@ -692,6 +730,9 @@ public class MessagePasser {
         } catch (IOException e) {
             System.out.println("Problem setting up server socket");
         }  
+        
+        // Disable certain GUI portions if logger
+        if (local_name.equals("logger")) { yes_logger = true; } else { yes_logger = false; }
         
         // Set up GUI
         SetupGui();
@@ -886,36 +927,39 @@ public class MessagePasser {
                 // Apply receive rule
                 DoReceiveRule(gotMessage, receiveRule);
             }
-            
-            // Retrieve a message from the front of the receiveQueue and display it
-            if (!nodeME.receiveQueue.isEmpty()) {
-	            try {
-					gotMessage = nodeME.receiveQueue.take();
-					// Update clock after message received
-					clockService.set_receiveTimeStamp(gotMessage.timeStamp);
-		            msgText.append(gotMessage.toString() + "\n");
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-	            
-	            // If a message was received, check to see if delayed received messages 
-	            // should also now be received
-	            if (receiveDelay == 0 && !nodeME.delayedReceiveQueue.isEmpty()) {
-	                for (int k=0; k < nodeME.delayedReceiveQueue.size(); k++) {
-	                	try {
-							gotMessage = nodeME.delayedReceiveQueue.take();
-							// Update clock after message received
-							clockService.set_receiveTimeStamp(gotMessage.timeStamp);
-		                    msgText.append(gotMessage.toString() + "\n");
-		                    mainFrame.repaint();
-						} catch (InterruptedException e) {
-							e.printStackTrace();
-						}
-	                }
+            if (!yes_logger) {
+	            // Retrieve a message from the front of the receiveQueue and display it
+	            if (!nodeME.receiveQueue.isEmpty()) {
+		            try {
+						gotMessage = nodeME.receiveQueue.take();
+						// Update clock after message received
+						clockService.set_receiveTimeStamp(gotMessage.timeStamp);
+			            msgText.append(gotMessage.toString() + "\n");
+			            currentMessage = gotMessage;
+			            mainFrame.repaint();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+		            
+		            // If a message was received, check to see if delayed received messages 
+		            // should also now be received
+		            if (receiveDelay == 0 && !nodeME.delayedReceiveQueue.isEmpty()) {
+		                for (int k=0; k < nodeME.delayedReceiveQueue.size(); k++) {
+		                	try {
+								gotMessage = nodeME.delayedReceiveQueue.take();
+								// Update clock after message received
+								clockService.set_receiveTimeStamp(gotMessage.timeStamp);
+			                    msgText.append(gotMessage.toString() + "\n");
+			                    currentMessage = gotMessage;
+			                    mainFrame.repaint();
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							}
+		                }
+		            }
 	            }
-            }
            
-            
+            }
         } catch (IOException e) {
             System.out.print("IO Exception: Problem receiving a message\n");
             e.printStackTrace();
