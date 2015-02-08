@@ -472,7 +472,12 @@ public class MessagePasser {
 			logicalButton.setPreferredSize(new Dimension(120, 30));
 			logicalButton.setActionCommand("logical");
 			logicalButton.addActionListener(clockButtonListener);
-			logicalButton.setEnabled(true);
+			if (nodeME.name.equals("logger")) {
+				// Change back to false later!!
+				logicalButton.setEnabled(true);
+			} else {
+				logicalButton.setEnabled(true);
+			}
 			vectorButton = new JButton("Vector Clock");
 			vectorButton.setPreferredSize(new Dimension(120, 30));
 			vectorButton.setActionCommand("vector");

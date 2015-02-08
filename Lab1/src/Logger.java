@@ -35,6 +35,85 @@ public class Logger {
         }
     };
     
+    // Determine Concurrency Function
+    public void DetermineConcurrency () {
+    	String msg; String log_ts; 
+    	TimeStampedMessage ts_msg;
+    	int tsp;
+		String[] sortedArray = new String[logQueue.size()];
+		String[] statusArray = new String[logQueue.size()];
+		
+		msgText.setText("");
+		msgText.append("Index	Status	TimeStamp	LogTimeStamp	Message\n");
+		msgText.append("---------------------------------------------------------------------------\n");
+
+		// Get and Sort array first
+		for (int i=0; i<logQueue.size(); i++) {
+			ts_msg = (TimeStampedMessage) logQueue.toArray()[i];
+			msg = ts_msg.get_data().toString();
+			tsp = Integer.parseInt(msg.substring(msg.indexOf("TimeStamp:")+10, msg.indexOf(" Seq:")));
+			log_ts = ts_msg.get_timeStamp().ts;
+			sortedArray[i] = "(" + tsp + ")" + "	" + log_ts + "	" + msg;
+		}
+		Arrays.sort(sortedArray);
+		
+		// Check if equal/same events
+		String m; 	String t;
+		String ms; 	String ts;
+		String[] ts_parts;
+		String[] t_parts;
+		boolean gmatch = false;
+		boolean lmatch = false;
+		statusArray[0] = " ";
+		for (int j=0; j<logQueue.size(); j++) {
+			ms = sortedArray[j].toString();
+			ts = ms.substring(ms.indexOf("(")+1, ms.indexOf(")"));
+			ts_parts = ts.split(",");
+			// Check every other element to see if equal/same events
+			for (int k=j+1; k<logQueue.size(); k++) {
+				m = sortedArray[k].toString();
+				t = m.substring(m.indexOf("(")+1, m.indexOf(")"));
+				t_parts = t.split(",");
+				if (t.equals(ts)) {
+					statusArray[k] = j + "=" + k;
+					
+				// Check if NOT equal
+				} else {
+					for (int q=0; q<t_parts.length; q++) {
+						// Check if A >= B 
+						if ((Integer.parseInt(t_parts[q])-Integer.parseInt(ts_parts[q])) >= 0) {
+							gmatch = true;
+						} else {
+							gmatch = false;
+						}
+						// Check if A <= B
+						if ((Integer.parseInt(t_parts[q])-Integer.parseInt(ts_parts[q])) <= 0) {
+							lmatch = true;
+						} else {
+							lmatch = false;
+						}
+					}
+					if (gmatch && !lmatch) {
+						statusArray[k] = " ";
+						//statusArray[k] = j + ">" + k;
+					} else if (lmatch && !gmatch) {
+						statusArray[k] = " ";
+						//statusArray[k] = j + "<" + k;
+					} else if (!gmatch && !lmatch){
+						statusArray[k] = j + "||" + k;
+					} else {
+						System.err.println("Error in trying to find causal relationships...");
+					}
+				}
+			}
+		}
+		
+		// Finally group together all results
+		for (int i=0; i<logQueue.size(); i++) {
+			msgText.append(i + "	" + statusArray[i] + "	" + sortedArray[i].toString()+"\n");
+		}
+    }
+    
     // Logger constructor
 	@SuppressWarnings("static-access")
 	public Logger() {
@@ -112,22 +191,22 @@ public class Logger {
             	  timer.stop();
                   statusBar.setText("Updated Log");
             	  receiveButton.setText("Receive Log Messages");
-            	  // Show updated log
-            	  msgText.setText("");
-            	  msgText.append("TimeStamp		Message\n");
-            	  msgText.append("---------------------------------------------------------\n");
-            	  String[] sortedArray = new String[logQueue.size()];
-            	  for (int i=0; i<logQueue.size(); i++) {
-            		  TimeStampedMessage ts_msg = (TimeStampedMessage) logQueue.toArray()[i];
-            		  String msg = ts_msg.get_data().toString();
-            		  int ts = Integer.parseInt(msg.substring(msg.indexOf("TimeStamp:")+10, msg.indexOf(" Seq:")));
-            		  //msgText.append(ts + "		" + msg +"\n");
-            		  sortedArray[i] = ts + "		" + msg;
-            	  }
-            	  Arrays.sort(sortedArray);
-            	  for (int j=0; j<logQueue.size(); j++) {
-            		  msgText.append(sortedArray[j].toString()+"\n");
-            	  }
+//            	  // Show updated log
+//            	  msgText.setText("");
+//            	  msgText.append("TimeStamp		Message\n");
+//            	  msgText.append("---------------------------------------------------------\n");
+//            	  String[] sortedArray = new String[logQueue.size()];
+//            	  for (int i=0; i<logQueue.size(); i++) {
+//            		  TimeStampedMessage ts_msg = (TimeStampedMessage) logQueue.toArray()[i];
+//            		  String msg = ts_msg.get_data().toString();
+//            		  int ts = Integer.parseInt(msg.substring(msg.indexOf("TimeStamp:")+10, msg.indexOf(" Seq:")));
+//            		  sortedArray[i] = ts + "		" + msg;
+//            	  }
+//            	  Arrays.sort(sortedArray);
+//            	  for (int j=0; j<logQueue.size(); j++) {
+//            		  msgText.append(sortedArray[j].toString()+"\n");
+//            	  }
+            	  DetermineConcurrency();
               }
            }
         });
