@@ -1,6 +1,6 @@
 // ClockService implemented as a singleton
 public class ClockService {
-	   private static ClockService cs = null;
+	   private static ClockService cs = null;    
 	   
 	   protected ClockService() {}
 	   
@@ -31,36 +31,39 @@ public class ClockService {
 
 class Logical extends ClockService {
     private int d;
-    private TimeStamp ts;
+    private int clock_ts;
     
     public Logical() {
-        this.d = 1;
-        this.ts = new TimeStamp();
-        this.ts.timeStamp = String.valueOf(1);
+        d = 1;
+        clock_ts = 1;
     }
 
     @ Override
     // Call this method to increment process timestamp between every successive event
     public void updateTimeStamp() {
-        this.ts.timeStamp = String.valueOf(Integer.parseInt(this.ts.timeStamp) + this.d);
+    	clock_ts = clock_ts + d;
     }
     
     @ Override
     // Set / Update timestamp when message received
-    public void set_receiveTimeStamp(TimeStamp ts) {
-    	this.ts.timeStamp = String.valueOf(Math.max(Integer.parseInt(this.ts.timeStamp), Integer.parseInt(ts.timeStamp)) + this.d);
+    public void set_receiveTimeStamp(TimeStamp msg_ts) {
+    	clock_ts = Math.max(clock_ts, Integer.parseInt(msg_ts.ts)) + d;
     }
     
     @ Override
     // Get timestamp for message (sent)
     public TimeStamp get_sendTimeStamp() {
-    	return ts;
+    	TimeStamp send_ts = new TimeStamp();
+    	send_ts.ts = String.valueOf(clock_ts);
+    	return send_ts;
     }
     
     @ Override
     // Get timestamp for non-message
     public TimeStamp get_clockTimeStamp() {
-    	return ts;
+    	TimeStamp send_ts = new TimeStamp();
+    	send_ts.ts = String.valueOf(clock_ts);
+    	return send_ts;
     }
 }
 

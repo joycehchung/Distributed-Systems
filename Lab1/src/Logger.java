@@ -4,8 +4,9 @@ import java.util.*;
 import javax.swing.*;
 import javax.swing.Timer;
 
-
 public class Logger {
+	
+	// Logger Message Passer
 	public MessagePasser logger_MP = null;
 	
 	// Logger Message Queue
@@ -20,10 +21,7 @@ public class Logger {
     public static ActionAdapter buttonListener = null;
     public static Timer timer = null;
     public static class ActionAdapter implements ActionListener { public void actionPerformed(ActionEvent e) {} }
-    
-    // Comparing Timestamps
-    
-    
+
     // Priority Queue Comparator for sorting
     public static Comparator<TimeStampedMessage> timeStampComparator = new Comparator<TimeStampedMessage>(){
          
@@ -37,17 +35,22 @@ public class Logger {
         }
     };
     
-//    // Get || and -> relationships
-//    public String GetRelationship(TimeStampedMessage msg) {
-//		  String data = msg.get_data().toString();
-//		  int data_ts = Integer.parseInt(data.substring(data.indexOf("TimeStamp:")+10, data.indexOf(" Seq:")));
-//		  int ts = msg.get_timeStamp().timeStamp; // Timestamp of sender
-//		  
-//		  return(data_ts + "		" + data +"\n");
-//    }
-//    
+    // Logger constructor
+	@SuppressWarnings("static-access")
 	public Logger() {
+		
+		// Logger MessagePasser
 		logger_MP = new MessagePasser("config", "logger");
+		
+		// Disable buttons for Logger (because NA)
+		logger_MP.sendButton.setEnabled(false); 
+		logger_MP.receiveButton.setEnabled(false);
+		logger_MP.logButton.setEnabled(false);
+		logger_MP.nodeList.setEnabled(false);
+		logger_MP.msgLine.setEnabled(false);
+		logger_MP.kindField.setEnabled(false);
+		
+		// Log message queue
 		logQueue = new PriorityQueue<TimeStampedMessage>(10, timeStampComparator);
 		
         // 	Set up the message pane
@@ -113,12 +116,17 @@ public class Logger {
             	  msgText.setText("");
             	  msgText.append("TimeStamp		Message\n");
             	  msgText.append("---------------------------------------------------------\n");
-            	  
+            	  String[] sortedArray = new String[logQueue.size()];
             	  for (int i=0; i<logQueue.size(); i++) {
             		  TimeStampedMessage ts_msg = (TimeStampedMessage) logQueue.toArray()[i];
             		  String msg = ts_msg.get_data().toString();
             		  int ts = Integer.parseInt(msg.substring(msg.indexOf("TimeStamp:")+10, msg.indexOf(" Seq:")));
-            		  msgText.append(ts + "		" + msg +"\n");
+            		  //msgText.append(ts + "		" + msg +"\n");
+            		  sortedArray[i] = ts + "		" + msg;
+            	  }
+            	  Arrays.sort(sortedArray);
+            	  for (int j=0; j<logQueue.size(); j++) {
+            		  msgText.append(sortedArray[j].toString()+"\n");
             	  }
               }
            }
@@ -141,6 +149,7 @@ public class Logger {
         mainFrame.setVisible(true);
 	}
 	
+	// Logger main
     public static void main(String[] args) {
         new Logger();
     }

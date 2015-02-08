@@ -76,15 +76,13 @@ public class MessagePasser {
     public static Node nodeD = new Node();
     
     // ClockService
-    public static ClockService clockService = null;
+    public ClockService clockService = null;
     
     // Logging
     public static TimeStampedMessage currentMessage = null;
     public static TimeStampedMessage logMessage = null;
-    public static boolean yes_logger;
     
-    // Java Swing ActionAdapter class for handling events (like button presses)
-    // Information from http://www.lamatek.com/lamasoft/javadocs/swingextras/com/lamatek/event/ActionAdapter.html
+    // Handle Java Swing events
     public static class ActionAdapter implements ActionListener {
         public void actionPerformed(ActionEvent e) {}
     }
@@ -235,6 +233,7 @@ public class MessagePasser {
     }
     	    
 	// Load Configuration File Function	
+	@SuppressWarnings("unchecked")
 	public static void LoadConfig(String conf_filename, Object local_name) {
 		try	{
 			HashMap<String, User> users = new HashMap<String, User>();
@@ -407,7 +406,6 @@ public class MessagePasser {
 	        pane.add(myPortLabel);
 	        infoPane.add(pane);
         
-        if (!yes_logger) {
         // 	TimeStampedMessage Options Heading Text
 	        JLabel emptyLabel = new JLabel();
 	        emptyLabel.setText("____________________________________");
@@ -447,7 +445,6 @@ public class MessagePasser {
 	            }
 	        };
 	        nodeList.addListSelectionListener(listListener);
-        }
         
         //	Clock Pane and Logical/Vector Clock Radio Buttons
 	        JPanel clockPane = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -471,7 +468,6 @@ public class MessagePasser {
 	            	}
 	            }
 		    };
-		    //** UPDATE TO ONLY ALLOW ONE FOR LOGGER
 			logicalButton = new JButton("Logical Clock");
 			logicalButton.setPreferredSize(new Dimension(120, 30));
 			logicalButton.setActionCommand("logical");
@@ -494,7 +490,7 @@ public class MessagePasser {
 			timeButtonListener = new ActionAdapter() {
 	            public void actionPerformed(ActionEvent e) {
 	            	if (e.getActionCommand().equals("timestamp")) {
-	            		timeLabel.setText("TimeStamp: " + clockService.get_clockTimeStamp().timeStamp);
+	            		timeLabel.setText("TimeStamp: " + clockService.get_clockTimeStamp().ts);
 	            		// Can add this back if we want this to be an event
 	            		//clockService.updateTimeStamp();
 	            	}
@@ -520,14 +516,12 @@ public class MessagePasser {
 			                  disconnectButton.setEnabled(true);
 			                  connectionStatus = CONNECTED;
 			                  statusBar.setText("Connected");
-			                  if (!yes_logger) {
-			                	 sendButton.setEnabled(true); 
-			                	 receiveButton.setEnabled(true);
-			                	 logButton.setEnabled(true);
-			                	 nodeList.setEnabled(true);
-			                	 msgLine.setEnabled(true);
-			                	 kindField.setEnabled(true);
-			                  }
+			                  sendButton.setEnabled(true); 
+			                  receiveButton.setEnabled(true);
+			                  logButton.setEnabled(true);
+			                  nodeList.setEnabled(true);
+			                  msgLine.setEnabled(true);
+			                  kindField.setEnabled(true);
 			                  mainFrame.repaint();
 			                  
 			                  // Connect Function
@@ -547,15 +541,13 @@ public class MessagePasser {
 			                  disconnectButton.setEnabled(false);
 			                  connectionStatus = DISCONNECTED;
 			                  statusBar.setText("Disconnected");
-			                  if (!yes_logger) {
-				                  sendButton.setEnabled(false);
-				                  receiveButton.setEnabled(false);
-				                  logButton.setEnabled(false);
-				                  nodeList.setEnabled(false);
-				                  kindField.setEnabled(false);
-				                  msgLine.setText("");
-				                  msgLine.setEnabled(false);
-			                  }
+			                  sendButton.setEnabled(false);
+			                  receiveButton.setEnabled(false);
+			                  logButton.setEnabled(false);
+			                  nodeList.setEnabled(false);
+			                  kindField.setEnabled(false);
+			                  msgLine.setText("");
+			                  msgLine.setEnabled(false); 
 			                  mainFrame.repaint();
 			                  
 			                  // Close up everything
@@ -597,7 +589,6 @@ public class MessagePasser {
 			connectPane.add(disconnectButton);
 			infoPane.add(connectPane);
         
-		if (!yes_logger) {
         // 	Send/Receive TimeStampedMessage Button
 			JPanel connectPane2 = new JPanel(new FlowLayout(FlowLayout.LEFT));
 			connectPane2.setPreferredSize(new Dimension(250,30));
@@ -616,14 +607,20 @@ public class MessagePasser {
 	                    msgLine.setText("");
 	                    kindField.setText("");
 	                    currentMessage = theMessage;
+	                    System.out.println("Timestamp: " + currentMessage.get_timeStamp().ts);
 	                    send(theMessage);
+	                    System.out.println("Timestamp2: " + currentMessage.get_timeStamp().ts);
+	                    // Update clock
+	            		clockService.updateTimeStamp();
 	                    mainFrame.repaint();
 	                // Receive message
 	                } else if (e.getActionCommand().equals("receive")){
 	                    receive();
+	                    ProcessMessage();
 	                    mainFrame.repaint();
                     // Log message
 	                } else if (e.getActionCommand().equals("log")){
+	                	System.out.println("Timestamp3: " + currentMessage.get_timeStamp().ts);
 	                	logMessage = new TimeStampedMessage("logger", currentMessage.get_kind(), currentMessage.toString());
 	                	logMessage.set_seqNum(sequenceNumber); 
                         sequenceNumber++;
@@ -661,7 +658,6 @@ public class MessagePasser {
 	        whoLabel = new JLabel();
 	        whoLabel.setText("Messages History :");
 	        whoLabel.setPreferredSize(new Dimension(50,20));
-		}
 		
         // 	Set up the message pane
 	        JPanel messagePane = new JPanel(new BorderLayout());
@@ -670,13 +666,11 @@ public class MessagePasser {
 	        msgText.setEditable(false);
 	        msgText.setForeground(Color.blue);
 	        JScrollPane msgTextPane = new JScrollPane(msgText, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-        if (!yes_logger) {
 	        msgLine = new JTextField();
 	        msgLine.setEnabled(false);
 	        msgLine.setPreferredSize(new Dimension(150,30));
 	        messagePane.add(whoLabel, BorderLayout.PAGE_START);
 	        messagePane.add(msgLine, BorderLayout.PAGE_END);
-        }
 	        messagePane.add(msgTextPane, BorderLayout.CENTER);
 	        
         // 	Set up the main pane
@@ -694,56 +688,13 @@ public class MessagePasser {
 	        mainFrame.pack();
 	        mainFrame.setVisible(true);
 	} 
-	
-    // TimeStampedMessage Passer constructor
-    public MessagePasser(String configuration_filename, String local_name) {
 
-    	// Load information from configuration file
-    	LoadConfig(configuration_filename, local_name);
-    	
-        // Set my information (nodeME) and otherNodes information
-        if (local_name.equals(nodeA.name)) {
-            nodeME.name = nodeA.name; nodeME.ip = nodeA.ip; nodeME.port = nodeA.port;
-            otherNodes.add(nodeB); otherNodes.add(nodeC); otherNodes.add(nodeD);
-            nodes[0] = nodeB.name; nodes[1] = nodeC.name; nodes[2] = nodeD.name;
-            nodeME.nodeNumber = 1;
-        } else if (local_name.equals(nodeB.name)) {
-            nodeME.name = nodeB.name; nodeME.ip = nodeB.ip; nodeME.port = nodeB.port;
-            otherNodes.add(nodeA); otherNodes.add(nodeC); otherNodes.add(nodeD);
-            nodes[0] = nodeA.name; nodes[1] = nodeC.name; nodes[2] = nodeD.name;
-            nodeME.nodeNumber = 2;
-        } else if (local_name.equals(nodeC.name)) {
-            nodeME.name = nodeC.name; nodeME.ip = nodeC.ip; nodeME.port = nodeC.port;
-            otherNodes.add(nodeA); otherNodes.add(nodeB); otherNodes.add(nodeD);
-            nodes[0] = nodeA.name; nodes[1] = nodeB.name; nodes[2] = nodeD.name;
-            nodeME.nodeNumber = 3;
-        } else if (local_name.equals(nodeD.name)) {
-            nodeME.name = nodeD.name; nodeME.ip = nodeD.ip; nodeME.port = nodeD.port;
-            otherNodes.add(nodeA); otherNodes.add(nodeB); otherNodes.add(nodeC);
-            nodes[0] = nodeA.name; nodes[1] = nodeB.name; nodes[2] = nodeC.name;
-            nodeME.nodeNumber = 4;
-        }
-        
-        // Set up server socket
-        try {
-            myServerSocket = new ServerSocket(nodeME.port);
-        } catch (IOException e) {
-            System.out.println("Problem setting up server socket");
-        }  
-        
-        // Disable certain GUI portions if logger
-        if (local_name.equals("logger")) { yes_logger = true; } else { yes_logger = false; }
-        
-        // Set up GUI
-        SetupGui();
-    }
-    
     // Send message function
-    public void send(TimeStampedMessage theMessage) {
-    	System.out.println("1TimeStampedMessage is: " + theMessage.toString() + " to " + theMessage.get_nodeIndex() + " " + clockService.get_clockTimeStamp().timeStamp);
+    public void send(final TimeStampedMessage theMessage) {
+    	//System.out.println("1TimeStampedMessage is: " + theMessage.toString() + " to " + theMessage.get_nodeIndex() + " " + clockService.get_clockTimeStamp().ts);
     	// Update clock
-		clockService.updateTimeStamp();
-		System.out.println("2TimeStampedMessage is: " + theMessage.toString() + " to " + theMessage.get_nodeIndex() + " " + clockService.get_clockTimeStamp().timeStamp);
+		//clockService.updateTimeStamp();
+		//System.out.println("2TimeStampedMessage is: " + theMessage.toString() + " to " + theMessage.get_nodeIndex() + " " + clockService.get_clockTimeStamp().ts);
         // Check send rules and perform specified actions
         sendRule = CheckRule(theMessage, CHECKSEND);
         if (sendRule == DROP) {
@@ -832,7 +783,7 @@ public class MessagePasser {
       
         src = msg.substring(5, msg.indexOf(" To:"));
         dest = msg.substring(msg.indexOf("To:")+3, msg.indexOf(" TimeStamp:"));
-        ts.timeStamp = msg.substring(msg.indexOf("TimeStamp:")+10, msg.indexOf(" Seq:"));
+        ts.ts = msg.substring(msg.indexOf("TimeStamp:")+10, msg.indexOf(" Seq:"));
         sNum = Integer.parseInt(msg.substring(msg.indexOf("Seq:")+4, msg.indexOf(" Kind:")));
         knd = msg.substring(msg.indexOf("Kind:")+5, msg.indexOf(" Dup:"));
         dup = Boolean.parseBoolean(msg.substring(msg.indexOf("Dup:")+4, msg.indexOf(" Data:")));
@@ -869,7 +820,7 @@ public class MessagePasser {
     }
     
     // Receive message function
-    public TimeStampedMessage receive() {
+    public void receive() {
     	TimeStampedMessage gotMessage = null;
         try {
             if (nodeME.inbox[0] != null && nodeME.inbox[0].ready()) {
@@ -925,52 +876,86 @@ public class MessagePasser {
                 // Apply receive rule
                 DoReceiveRule(gotMessage, receiveRule);
             }
-            if (!yes_logger) {
-	            // Retrieve a message from the front of the receiveQueue and display it
-	            if (!nodeME.receiveQueue.isEmpty()) {
-		            try {
-						gotMessage = nodeME.receiveQueue.take();
-						// Update clock after message received
-						clockService.set_receiveTimeStamp(gotMessage.get_timeStamp());
-			            msgText.append(gotMessage.toString() + "\n");
-			            currentMessage = gotMessage;
-			            mainFrame.repaint();
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-		            
-		            // If a message was received, check to see if delayed received messages 
-		            // should also now be received
-		            if (receiveDelay == 0 && !nodeME.delayedReceiveQueue.isEmpty()) {
-		                for (int k=0; k < nodeME.delayedReceiveQueue.size(); k++) {
-		                	try {
-								gotMessage = nodeME.delayedReceiveQueue.take();
-								// Update clock after message received
-								clockService.set_receiveTimeStamp(gotMessage.get_timeStamp());
-			                    msgText.append(gotMessage.toString() + "\n");
-			                    currentMessage = gotMessage;
-			                    mainFrame.repaint();
-							} catch (InterruptedException e) {
-								e.printStackTrace();
-							}
-		                }
-		            }
-	            }
-           
-            }
         } catch (IOException e) {
             System.out.print("IO Exception: Problem receiving a message\n");
             e.printStackTrace();
         }
-        
-        return gotMessage;
     }
     
-    public static void main(String[] args) {
-        //new MessagePasser(args[0], args[1]);
-    	new MessagePasser("config","charlie");
+    public TimeStampedMessage ProcessMessage() {
+    	TimeStampedMessage msg = null;
+        // Retrieve a message from the front of the receiveQueue and display it
+        if (!nodeME.receiveQueue.isEmpty()) {
+            try {
+            	msg = nodeME.receiveQueue.take();
+				// Update clock after message received
+				clockService.set_receiveTimeStamp(msg.get_timeStamp());
+	            msgText.append(msg.toString() + "\n");
+	            currentMessage = msg;
+	            mainFrame.repaint();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+            
+            // If a message was received, check to see if delayed received messages 
+            // should also now be received
+            if (receiveDelay == 0 && !nodeME.delayedReceiveQueue.isEmpty()) {
+                for (int k=0; k < nodeME.delayedReceiveQueue.size(); k++) {
+                	try {
+                		msg = nodeME.delayedReceiveQueue.take();
+						// Update clock after message received
+						clockService.set_receiveTimeStamp(msg.get_timeStamp());
+	                    msgText.append(msg.toString() + "\n");
+	                    currentMessage = msg;
+	                    mainFrame.repaint();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+                }
+            }
+        }
+        return msg;
     }
 
+    // TimeStampedMessage Passer constructor
+    public MessagePasser(String configuration_filename, String local_name) {
+
+    	// Load information from configuration file
+    	LoadConfig(configuration_filename, local_name);
+    	
+        // Set my information (nodeME) and otherNodes information
+        if (local_name.equals(nodeA.name)) {
+            nodeME.name = nodeA.name; nodeME.ip = nodeA.ip; nodeME.port = nodeA.port;
+            otherNodes.add(nodeB); otherNodes.add(nodeC); otherNodes.add(nodeD);
+            nodes[0] = nodeB.name; nodes[1] = nodeC.name; nodes[2] = nodeD.name;
+            nodeME.nodeNumber = 1;
+        } else if (local_name.equals(nodeB.name)) {
+            nodeME.name = nodeB.name; nodeME.ip = nodeB.ip; nodeME.port = nodeB.port;
+            otherNodes.add(nodeA); otherNodes.add(nodeC); otherNodes.add(nodeD);
+            nodes[0] = nodeA.name; nodes[1] = nodeC.name; nodes[2] = nodeD.name;
+            nodeME.nodeNumber = 2;
+        } else if (local_name.equals(nodeC.name)) {
+            nodeME.name = nodeC.name; nodeME.ip = nodeC.ip; nodeME.port = nodeC.port;
+            otherNodes.add(nodeA); otherNodes.add(nodeB); otherNodes.add(nodeD);
+            nodes[0] = nodeA.name; nodes[1] = nodeB.name; nodes[2] = nodeD.name;
+            nodeME.nodeNumber = 3;
+        } else if (local_name.equals(nodeD.name)) {
+            nodeME.name = nodeD.name; nodeME.ip = nodeD.ip; nodeME.port = nodeD.port;
+            otherNodes.add(nodeA); otherNodes.add(nodeB); otherNodes.add(nodeC);
+            nodes[0] = nodeA.name; nodes[1] = nodeB.name; nodes[2] = nodeC.name;
+            nodeME.nodeNumber = 4;
+        }
+        
+        // Set up server socket
+        try {
+            myServerSocket = new ServerSocket(nodeME.port);
+        } catch (IOException e) {
+            System.out.println("Problem setting up server socket");
+        }  
+        
+        // Set up GUI
+        SetupGui();
+    }
 }
 
 

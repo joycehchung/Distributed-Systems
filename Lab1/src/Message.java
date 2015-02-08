@@ -90,6 +90,8 @@ public class Message implements Serializable {
 
 class TimeStampedMessage extends Message {
 
+	private static final long serialVersionUID = 1L;
+	
 	private TimeStamp msgTimeStamp;
 	
 	public TimeStampedMessage(String dest, String kind, Object data) {
@@ -112,10 +114,10 @@ class TimeStampedMessage extends Message {
     public String toString() {
         return	"From:" + this.get_source() + 
         		" To:" + this.get_destination() +
-        		" TimeStamp:" + this.get_timeStamp().timeStamp + 
+        		" TimeStamp:" + this.get_timeStamp().ts + 
         		" Seq:" + this.get_seqNum() + 
         		" Kind:" + this.get_kind() +
         		" Dup:" + this.get_duplicate() + 
         		" Data:" + this.get_data();
-    }
+	}
 }

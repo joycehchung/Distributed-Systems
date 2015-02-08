@@ -1,3 +1,3 @@
 public class TimeStamp {
-	public String timeStamp;
+	public String ts;
 }
