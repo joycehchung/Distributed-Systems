@@ -1,5 +1,6 @@
 
 
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -22,7 +23,6 @@ public class VectorTimeStamp extends TimeStamp {
     	}
     }
 
-    @Override
     public int compareTo(TimeStamp ts) {
         if (ts instanceof VectorTimeStamp) {
             VectorTimeStamp vectorts = (VectorTimeStamp) ts;
@@ -80,7 +80,7 @@ public class VectorTimeStamp extends TimeStamp {
 
 	@Override
 	public String toString() {
-		return "VectorTimeStamp"+  timevector + "]";
+		return "VectorTimeStamp"+  timevector;
 	}
 
 	
