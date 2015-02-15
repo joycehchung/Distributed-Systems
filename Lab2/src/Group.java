@@ -13,6 +13,7 @@ public class Group {
         this.numMembers = nodes.length + 1;
         this.groupMembers = new ArrayList<String>();
         this.groupMembers.addAll(Arrays.asList(nodes));
+        this.groupMembers.add(myName);
         this.groupVectorClock = ClockService.CreateClockService(ClockService.ClockTypes.VECTOR, nodes, myName);
         this.groupHoldQueue = new LinkedBlockingQueue<TimeStampedMessage>();
     }

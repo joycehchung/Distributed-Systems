@@ -1,3 +1,5 @@
+import java.util.Arrays;
+
 
 public class Vector extends ClockService {
 	
@@ -83,21 +85,43 @@ public class Vector extends ClockService {
 		return send_ts;
     }
     
-    // Check for causal ordering
-    public int get_causalOrder(TimeStamp a, TimeStamp b) {
+    // Use to normalize timestamps being compared
+    public String NormalizeTimeStamp(TimeStamp a) {
     	String[] a_msg = a.ts.split(",");
-    	String[] b_msg = a.ts.split(",");
-    	if (a.ts.equals(b.ts)) {
+    	Arrays.sort(a_msg);
+    	String[] nameTimeA;
+    	String newa=""; 
+    	for (int i=0; i<a_msg.length; i++) {
+    		nameTimeA = a_msg[i].split("=");
+    		if(i == a_msg.length-1) {
+    			newa = newa + nameTimeA[1];
+    		} else {
+    			newa = newa + nameTimeA[1] + ",";
+    		}
+    	}
+    	return newa;
+    }
+    
+    @ Override
+    // Use to check for causal ordering for messages in same group holdqueue
+    public int get_causalOrder(TimeStamp a_ts, TimeStamp b_ts) {
+    	String a = NormalizeTimeStamp(a_ts);
+    	String b = NormalizeTimeStamp(b_ts);
+    	
+    	String[] a_msg = a.split(",");
+    	String[] b_msg = b.split(",");
+    	
+    	if (a.equals(b)) {
     		return EQUAL;
     	} else {
     		boolean pos = false;
     		boolean neg = false;
 	    	for (int i=0; i<a_msg.length; i++) {
-				// Check if A -> B 
+				// Check if A <- B 
 				if ((Integer.parseInt(a_msg[i])-Integer.parseInt(b_msg[i])) > 0) {
 					pos = true;
 				}
-				// Check if A <- B
+				// Check if A -> B
 				if ((Integer.parseInt(a_msg[i])-Integer.parseInt(b_msg[i])) < 0) {
 					neg = true;
 				}
@@ -105,9 +129,9 @@ public class Vector extends ClockService {
 			if (pos && neg) {
 				return CONCURRENT;
 			} else if (pos && !neg) {
-				return BEFORE;
-			} else if (!pos && neg) {
 				return AFTER;
+			} else if (!pos && neg) {
+				return BEFORE;
 			}
     	}
     	return ERROR;

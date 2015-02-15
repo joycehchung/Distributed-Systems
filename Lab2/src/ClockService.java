@@ -39,4 +39,7 @@ public class ClockService {
 			
 			// Get timestamp for non-message
 			protected TimeStamp get_clockTimeStamp() { return null; }
+			
+			// Get causal ordering from timestamps
+			public int get_causalOrder(TimeStamp a, TimeStamp b) { return 4; }
 }

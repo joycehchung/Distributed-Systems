@@ -81,10 +81,16 @@ public class MessagePasser {
     
     // ClockService
     public ClockService clockService = null;
+    private final static int EQUAL = 0;
+    private final static int BEFORE = 1;
+    private final static int AFTER = 2;
+    private final static int CONCURRENT = 3;
+    private final static int ERROR = 4;
     
     // Logging
     public static TimeStampedMessage currentMessage = null;
     public static TimeStampedMessage logMessage = null;
+    public static ArrayList<TimeStampedMessage> history = new ArrayList<TimeStampedMessage>();
     
     // Configuration File
 	public static URL configFileUrl;
@@ -498,6 +504,7 @@ public class MessagePasser {
 	}
 	
 	// Setup GUI function
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public void SetupGui() {
         // 	Status bar
 	        statusBar = new JLabel();
@@ -559,7 +566,7 @@ public class MessagePasser {
 	        ArrayList<String> namesList = new ArrayList<String>();
 	        namesList.addAll(Arrays.asList(nodes));
 	        namesList.addAll(groups);
-	        nodeList = new JList<String>((String[]) namesList.toArray());
+	        nodeList = new JList(namesList.toArray());
 	        nodeList.setEnabled(false);
 	        nodeList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 	        nodeListPanel.add(nodeList);
@@ -625,7 +632,7 @@ public class MessagePasser {
 	            	if (e.getActionCommand().equals("timestamp")) {
 	            		timeLabel.setText("TimeStamp: " + clockService.get_clockTimeStamp().ts);
 	            		// Can add this back if we want this to be an event
-	            		clockService.updateTimeStamp();
+	            		//clockService.updateTimeStamp();
 	            	}
 	            }
 		    };
@@ -879,8 +886,40 @@ public class MessagePasser {
     
     // Multicast message method
     public void Multicast(TimeStampedMessage message) {
+
     	String destGroup = message.get_destination();
+    	int index = 0;
+    	boolean found = false;
     	
+    	// Search for the group to multicast messages to from myGroups
+    	for (int i=0; i<myGroups.size(); i++) {
+    		if (myGroups.get(i).groupName.equals(destGroup)) {
+    			found = true;
+    			// Update vector clock for GROUP
+    			myGroups.get(i).groupVectorClock.updateTimeStamp();
+    			System.out.println("Group time stamp: " + myGroups.get(i).groupVectorClock.get_clockTimeStamp().ts);
+    			// Send message out to each node in the Group
+    			for (int j=0; j<myGroups.get(i).numMembers; j++) {
+    				index = GetSendNodeIndex(myGroups.get(i).groupMembers.get(j));
+    				if (index != 100) {
+	    				message.set_nodeIndex(index);
+	    				message.set_timeStamp(myGroups.get(i).groupVectorClock.get_clockTimeStamp());
+	    				DoSend(message);
+    				} else {
+    					// This process is CO-multicasting to itself, so it can CO-deliver immediately (as per the textbook)
+    		            msgText.append("\n" + message.toString() + "\n");
+    		            history.add(message);
+    		            currentMessage = message;
+    		            mainFrame.repaint();
+    				}
+    			}
+    		}
+    	}
+    	
+    	// Print out error if the group name was not found and no messages were multicast
+    	if (!found) {
+			System.err.println("Group name not found.\n");
+		}
     	
     }
     
@@ -960,21 +999,37 @@ public class MessagePasser {
     // Apply message receive rule
     public void DoReceiveRule(TimeStampedMessage gotMessage, int receiveRule) {
         if (receiveRule == NONE) {
-        	nodeME.receiveQueue.add(gotMessage);
+        	if (!CheckMulticast(gotMessage)) {
+        		nodeME.receiveQueue.add(gotMessage);
+        	}
             receiveDelay = 0;
         } else if (receiveRule == DROP) {
+        	// Both normal and multicast messages are dropped if rule matches
             receiveDelay = 0;
         } else if (receiveRule == DUPLICATE) {
-        	nodeME.receiveQueue.add(gotMessage);
-        	// EDITED OUT: Lab says only send rule should have duplicate flag
-        	// Set duplicate flag to true for second message received
-            // gotMessage.set_duplicate(true);
-            nodeME.receiveQueue.add(gotMessage);
+        	if (!CheckMulticast(gotMessage)) {
+        		nodeME.receiveQueue.add(gotMessage);
+                nodeME.receiveQueue.add(gotMessage);
+        	}
             receiveDelay = 0;
         } else if (receiveRule == DELAY) {
             receiveDelay = 1;
             nodeME.delayedReceiveQueue.add(gotMessage);
         }
+    }
+    
+    // Check if receiving a multicast
+    public boolean CheckMulticast (TimeStampedMessage message) {
+    	boolean is_multicast = false;
+    	for (int i=0; i<myGroups.size(); i++) {
+    		if (message.get_destination().equals(myGroups.get(i).groupName)) {
+    			is_multicast = true;
+    			// Put message in holdQueue
+    			myGroups.get(i).groupHoldQueue.add(message);
+    			break;
+    		}
+    	}
+    	return is_multicast;
     }
     
     // Receive message function
@@ -1040,12 +1095,75 @@ public class MessagePasser {
         }
     }
     
+    // Check HoldQueue
+    // Index is the index of the group
+    public boolean CheckHoldQueue(int index) {
+    	TimeStampedMessage ts_msg;
+    	TimeStamp msg_ts;
+    	TimeStampedMessage ts_msg2;
+    	TimeStamp msg_ts2;
+    	int causality = ERROR;
+    	boolean yes_deliver;
+    	
+    	// Go through each message in the hold queue
+		for (int i=0; i<myGroups.get(index).groupHoldQueue.size(); i++) {
+		
+			ts_msg = (TimeStampedMessage) myGroups.get(index).groupHoldQueue.toArray()[i];
+			msg_ts = ts_msg.get_timeStamp();
+			
+			// Compare timestamp with all other timestamps in queue
+			yes_deliver = true;
+			for (int j=0; j<myGroups.get(index).groupHoldQueue.size(); j++) {
+				if (i==j) {
+					continue;
+				} else {
+					ts_msg2 = (TimeStampedMessage) myGroups.get(index).groupHoldQueue.toArray()[j];
+					msg_ts2 = ts_msg2.get_timeStamp();
+					causality = myGroups.get(index).groupVectorClock.get_causalOrder(msg_ts, msg_ts2);
+					if (causality == AFTER) {
+						yes_deliver = false;
+					} else if (causality == EQUAL) {
+						// Get rid of duplicate messages
+						// myGroups.get(index).groupHoldQueue.remove(myGroups.get(index).groupHoldQueue.toArray()[j]);
+					}
+				}
+			}
+
+			// If yes_deliver is still true, then can remove from hold queue and CO-deliver the message
+			if (yes_deliver) {
+				myGroups.get(index).groupHoldQueue.remove(myGroups.get(index).groupHoldQueue.toArray()[i]);
+    			// Receive message if you haven't already received the message before (if message isn't a duplicate)
+//				if (!history.contains(ts_msg)) {
+//					System.out.println("HERE IS EVERYTHING\n");
+//					System.out.println(history.toString());
+					nodeME.receiveQueue.add(ts_msg);
+					// If not the multicaster, B-multicast out to group if you haven't already received the message
+//					ts_msg.set_source(nodeME.name);
+//					ts_msg.set_nodeIndex(GetSendNodeIndex(myGroups.get(index).groupName));
+//					send(ts_msg);
+//				}
+				// Update Group Vector Clock
+				myGroups.get(index).groupVectorClock.updateTimeStamp();
+			}
+		}
+		return true;
+    }
+    
+    // Process Message == Deliver Message from the receiveQueue
     public TimeStampedMessage ProcessMessage() {
-    	TimeStampedMessage msg = null;
+    	TimeStampedMessage msg = null;	
+    	// Check all Group holdQueues for causal ordering requirement
+    	for (int i=0; i<myGroups.size(); i++) {
+    		if (!myGroups.get(i).groupHoldQueue.isEmpty()) {
+    			CheckHoldQueue(i);
+    		}
+    	}
+    	
         // Retrieve a message from the front of the receiveQueue and display it
         if (!nodeME.receiveQueue.isEmpty()) {
             try {
             	msg = nodeME.receiveQueue.take();
+            	history.add(msg);
 				// Update clock after message received
 				clockService.set_receiveTimeStamp(msg.get_timeStamp());
 	            msgText.append("\n" + msg.toString() + "\n");
@@ -1061,11 +1179,14 @@ public class MessagePasser {
                 for (int k=0; k < nodeME.delayedReceiveQueue.size(); k++) {
                 	try {
                 		msg = nodeME.delayedReceiveQueue.take();
-						// Update clock after message received
-						clockService.set_receiveTimeStamp(msg.get_timeStamp());
-	                    msgText.append("\n" + msg.toString() + "\n");
-	                    currentMessage = msg;
-	                    mainFrame.repaint();
+                		history.add(msg);
+                		if (!CheckMulticast(msg)) {
+    						// Update clock after message received
+    						clockService.set_receiveTimeStamp(msg.get_timeStamp());
+    	                    msgText.append("\n" + msg.toString() + "\n");
+    	                    currentMessage = msg;
+    	                    mainFrame.repaint();
+                		}
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
@@ -1105,7 +1226,9 @@ public class MessagePasser {
         }
         
         // Set up group information: Group(String groupName, String[] nodes, String myName)
-        
+        Group group1 = new Group("Group1", nodes, nodeME.name);
+        myGroups.add(group1);
+        groups.add("Group1");
         
         // Set up server socket
         try {
