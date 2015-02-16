@@ -301,12 +301,12 @@ public class MessagePasser {
 
 			if(!users.containsKey(local_name))
 			{
-
 				System.err.println("local_name: " + local_name + " isn't in " + conf_filename + ", please check again!");
 				System.exit(1);
 			}
 			
 			// Get Groups
+			boolean add_to_group = false;
 			ArrayList<HashMap<String, Object> > group_rule_arr = (ArrayList<HashMap<String, Object> >)data.get("groups");
 			for(HashMap<String, Object> group_rule : group_rule_arr){
 				String groupName = (String)group_rule.get("name");
@@ -315,21 +315,33 @@ public class MessagePasser {
 					String myName = "";
 
 					if (key.equals("members")){
+
 						List<String> members = (List<String>) group_rule.get("members");
-						for (String username:users.keySet()){
-							if (!members.contains(username)){
-								myName = username;
-							}
+						if (members.contains(local_name)){
+							add_to_group = true;
 						}
+
+						for (Iterator<String> iter = members.listIterator(); iter.hasNext(); ) {
+						    String a = iter.next();
+						    if (a.contains(local_name.toString())) {
+						        iter.remove();
+						    }
+						}
+						myName = local_name.toString();
 						String[] stringArray = members.toArray(new String[members.size()]);
-						Group group = new Group(groupName, stringArray, myName);
-						Groups.add(group);
+						
+						if (add_to_group){
+							Group group = new Group(groupName, stringArray, myName);
+							Groups.add(group);
+						}
 					}
 
 				}
 				
 				
 			}
+
+
 			
 			// Get Send Rules
 			ArrayList<HashMap<String, Object> > send_rule_arr = (ArrayList<HashMap<String, Object> >)data.get("sendRules");
