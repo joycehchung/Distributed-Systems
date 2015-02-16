@@ -306,7 +306,6 @@ public class MessagePasser {
 			}
 			
 			// Get Groups
-			boolean add_to_group = false;
 			ArrayList<HashMap<String, Object> > group_rule_arr = (ArrayList<HashMap<String, Object> >)data.get("groups");
 			for(HashMap<String, Object> group_rule : group_rule_arr){
 				String groupName = (String)group_rule.get("name");
@@ -315,7 +314,7 @@ public class MessagePasser {
 					String myName = "";
 
 					if (key.equals("members")){
-
+						boolean add_to_group = false;
 						List<String> members = (List<String>) group_rule.get("members");
 						if (members.contains(local_name)){
 							add_to_group = true;
