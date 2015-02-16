@@ -1,6 +1,7 @@
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.List;
 import java.awt.*;
 import java.awt.event.*;
 
@@ -32,7 +33,8 @@ public class MessagePasser {
     public static int receiveDelay = 0;
 	public static ArrayList<Rule> SendRules = new ArrayList<Rule>();
 	public static ArrayList<Rule> ReceiveRules = new ArrayList<Rule>();
-    
+	public static ArrayList<Group> Groups = new ArrayList<Group>();
+
     // Status
     public final static int DISCONNECTED = 0;
     public final static int CONNECTED = 1;
@@ -299,12 +301,39 @@ public class MessagePasser {
 
 			if(!users.containsKey(local_name))
 			{
+				System.out.println("users");
+				System.out.println(users);
+				System.out.println("local name");
+				System.out.println(local_name);
+
 				System.err.println("local_name: " + local_name + " isn't in " + conf_filename + ", please check again!");
 				System.exit(1);
 			}
 			
 			// Get Groups
+			ArrayList<HashMap<String, Object> > group_rule_arr = (ArrayList<HashMap<String, Object> >)data.get("groups");
+			for(HashMap<String, Object> group_rule : group_rule_arr){
+				String groupName = (String)group_rule.get("name");
+				for (String key:group_rule.keySet())
+				{
+					String myName = "";
 
+					if (key.equals("members")){
+						List<String> members = (List<String>) group_rule.get("members");
+						for (String username:users.keySet()){
+							if (!members.contains(username)){
+								myName = username;
+							}
+						}
+						String[] stringArray = members.toArray(new String[members.size()]);
+						Group group = new Group(groupName, stringArray, myName);
+						Groups.add(group);
+					}
+
+				}
+				
+				
+			}
 			
 			// Get Send Rules
 			ArrayList<HashMap<String, Object> > send_rule_arr = (ArrayList<HashMap<String, Object> >)data.get("sendRules");
@@ -1241,6 +1270,7 @@ public class MessagePasser {
         SetupGui();
     }
 }
+
 
 
 
