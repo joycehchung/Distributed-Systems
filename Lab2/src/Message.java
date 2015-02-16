@@ -13,12 +13,16 @@ public class Message implements Serializable {
  
     // This is just to keep track of socket to send/receive messages from
     private int nodeIndex;
+    
+    // This is just to keep track of multicast messages
+    private boolean multicast;
 
     public Message(String dest, String kind, Object data) {
         this.dest = dest;
         this.kind = kind;
         this.data = data;
         this.duplicate = false;
+        this.multicast = false;
     }
 
     public int get_seqNum() {
@@ -75,6 +79,14 @@ public class Message implements Serializable {
 
     public void set_duplicate(boolean duplicate) {
         this.duplicate = duplicate;
+    }
+    
+    public Boolean get_multicast() {
+        return multicast;
+    }
+
+    public void set_multicast(boolean multicast) {
+        this.multicast = multicast;
     }
 
     @Override

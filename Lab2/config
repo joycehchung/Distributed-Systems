@@ -20,30 +20,23 @@ configuration:
     port : 1987
 groups:
   - name	: Group1
-	members	:
-		- alice
-		- bob
-		- charlie
+    members	:
+      - alice
+      - bob
+      - charlie
   - name	: Group2
-  	members	:
-  		-daphnie
-  		-bob
-  		-charlie
+    members	:
+      - daphnie
+      - bob
+      - charlie
 sendRules :
-  - action : duplicate      # 3rd message from Charlie that anyone 
-    src    : alice        # receives will be duplicated
-  - action : drop      # 3rd message from Charlie that anyone 
-    src    : charlie        # receives will be duplicated
-    seqNum : 3
-  - action : delay      # 3rd message from Charlie that anyone 
-    src    : bob        # receives will be duplicated
-    seqNum : 6
+  - action : delay
+    src    : aliceb
+    dest   : charlieb  
+  - action : drop
+    src    : daphnieb
+    dest   : charlieb 
 receiveRules :
-  - action : duplicate      # 3rd message from Charlie that anyone 
-    dest   : charlie        # receives will be duplicated
-  - action : drop      # 3rd message from Charlie that anyone 
-    dest   : bob        # receives will be duplicated
-    seqNum : 4
-  - action : delay      # 3rd message from Charlie that anyone 
-    dest   : daphnie        # receives will be duplicated
-    seqNum : 1
+  - action : drop
+    src    : alice
+    dest   : charlie

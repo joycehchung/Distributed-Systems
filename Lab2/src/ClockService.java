@@ -1,7 +1,7 @@
 
 // ClockService implemented as a singleton
 public class ClockService {
-	   private static ClockService instance = null;    
+	   //private static ClockService instance = null;    
 	   
 	   protected ClockService() {}
 	   
@@ -12,6 +12,7 @@ public class ClockService {
 	   
 	   
 	   public static ClockService CreateClockService(ClockTypes type, String[] nodes, String meName) {
+		   ClockService instance = null;
 	      if(instance == null) {
 	    	  switch(type){
 	    	  	case LOGICAL:
@@ -31,6 +32,9 @@ public class ClockService {
 			// Call this method to increment process timestamp between every successive event
 			protected void updateTimeStamp() { }
 		    
+			// Set / Update timestamp when Multicast message received
+			public void set_receiveMulticastTimeStamp(TimeStamp msg_ts, String source) { }
+			  
 			// Get timestamp for message (received)
 			protected void set_receiveTimeStamp(TimeStamp ts) { }
 			
@@ -42,4 +46,7 @@ public class ClockService {
 			
 			// Get causal ordering from timestamps
 			public int get_causalOrder(TimeStamp a, TimeStamp b) { return 4; }
+			
+			// Use to check for causal ordering for messages in same group holdqueue
+			public boolean CheckWait(TimeStamp source_ts, String source) { return false; }
 }

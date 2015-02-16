@@ -13,7 +13,7 @@ public class Vector extends ClockService {
     	public String node_name;
     	public int node_ts;
     }
-    private NodeClocks[] node_clocks = new NodeClocks[3];
+    private NodeClocks[] node_clocks; // = new NodeClocks[3];
     
     // Relationship Integers
     private final static int EQUAL = 0;
@@ -28,10 +28,11 @@ public class Vector extends ClockService {
     // Constructor
     public Vector(String[] nodes, String meName) {
         d = 1;
-        my_ts = 1;
+        my_ts = 0;
         my_name = meName;
         // Nodes
         num = nodes.length;
+        node_clocks = new NodeClocks[num];
         for (int i=0; i<num; i++) {
         	node_clocks[i] = new NodeClocks();
         	node_clocks[i].node_name = nodes[i];
@@ -43,6 +44,23 @@ public class Vector extends ClockService {
     // Call this method to increment process timestamp between every successive event
     public void updateTimeStamp() {
     	my_ts = my_ts + d;
+    }
+    
+    @ Override 
+    // Set / Update timestamp when Multicast message received
+    public void set_receiveMulticastTimeStamp(TimeStamp msg_ts, String source) {
+    	String[] parts = msg_ts.ts.split(",");
+    	for (int i=0; i<parts.length; i++) {
+    		String aname = parts[i].substring(0, parts[i].indexOf("="));
+    		if (aname.equalsIgnoreCase(source)) {
+	    		for (int j=0; j<num; j++) {
+	    			if (node_clocks[j].node_name.equalsIgnoreCase(aname)) {
+	    				node_clocks[j].node_ts = node_clocks[j].node_ts + 1;
+	    				break;
+	    			}
+	    		}
+    		}
+    	}
     }
     
     @ Override
@@ -64,10 +82,11 @@ public class Vector extends ClockService {
     @ Override
     // Get timestamp for message (sent)
     public TimeStamp get_sendTimeStamp() {
-    	String new_ts = node_clocks[0].node_name + "=" + node_clocks[0].node_ts + "," +
-    					node_clocks[1].node_name + "=" + node_clocks[1].node_ts + "," +
-    					node_clocks[2].node_name + "=" + node_clocks[2].node_ts + "," +
-    					my_name + "=" + my_ts;
+       	String new_ts = "";
+    	for (int i=0; i<node_clocks.length; i++) {
+    		new_ts = new_ts + node_clocks[i].node_name + "=" + node_clocks[i].node_ts + ",";
+    	}
+    	new_ts = new_ts + my_name + "=" + my_ts;
     	TimeStamp send_ts = new TimeStamp(new_ts);
     	send_ts.ts = new_ts;
     	return send_ts;
@@ -76,10 +95,11 @@ public class Vector extends ClockService {
     @ Override
     // Get timestamp for non-message
     public TimeStamp get_clockTimeStamp() {
-    	String new_ts = node_clocks[0].node_name + "=" + node_clocks[0].node_ts + "," +
-						node_clocks[1].node_name + "=" + node_clocks[1].node_ts + "," +
-						node_clocks[2].node_name + "=" + node_clocks[2].node_ts + "," + 
-						my_name + "=" + my_ts;
+    	String new_ts = "";
+    	for (int i=0; i<node_clocks.length; i++) {
+    		new_ts = new_ts + node_clocks[i].node_name + "=" + node_clocks[i].node_ts + ",";
+    	}
+    	new_ts = new_ts + my_name + "=" + my_ts;
 		TimeStamp send_ts = new TimeStamp(new_ts);
 		send_ts.ts = new_ts;
 		return send_ts;
@@ -102,6 +122,30 @@ public class Vector extends ClockService {
     	return newa;
     }
     
+    @ Override
+    // Use the check for extra wait condition for hold queue
+    // Returns true if wait, false if no longer have to wait
+    public boolean CheckWait(TimeStamp source_ts, String source) {
+    	boolean wait = true;
+    	
+    	String[] parts = source_ts.ts.split(",");
+    	for (int i=0; i<parts.length; i++) {
+    		String aname = parts[i].substring(0, parts[i].indexOf("="));
+    		int atimestamp = Integer.parseInt(parts[i].substring(parts[i].indexOf("=")+1,parts[i].length()));
+    		if (aname.equalsIgnoreCase(source)) {
+	    		for (int j=0; j<num; j++) {
+	    			if (node_clocks[j].node_name.equalsIgnoreCase(aname)) {
+	    				if (node_clocks[j].node_ts + 1 == atimestamp) {
+	    					wait = false;
+	    				}
+	    				break;
+	    			}
+	    		}
+    		}
+    	}
+
+		return wait;
+    }
     @ Override
     // Use to check for causal ordering for messages in same group holdqueue
     public int get_causalOrder(TimeStamp a_ts, TimeStamp b_ts) {
