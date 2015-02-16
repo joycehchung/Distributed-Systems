@@ -301,10 +301,6 @@ public class MessagePasser {
 
 			if(!users.containsKey(local_name))
 			{
-				System.out.println("users");
-				System.out.println(users);
-				System.out.println("local name");
-				System.out.println(local_name);
 
 				System.err.println("local_name: " + local_name + " isn't in " + conf_filename + ", please check again!");
 				System.exit(1);
