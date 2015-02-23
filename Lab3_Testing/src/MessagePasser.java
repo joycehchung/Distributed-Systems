@@ -10,7 +10,6 @@ import javax.swing.event.*;
 
 import org.yaml.snakeyaml.Yaml;
 
-@SuppressWarnings("unused")
 public class MessagePasser {
 	
     // Sockets
@@ -75,34 +74,17 @@ public class MessagePasser {
     public static JLabel timeLabel = null;
     
     // Requests for Critical Section
-    private final static int RELEASED = 0;
-	private final static int HELD = 1;
-    private final static int WANTED = 2;
-    private final static int BLOCKED = 3;
-    public static int numRequests = 0;
-    public static int numReplies = 0;
-    private final static String[] requestStatus = new String[]{"RELEASED","HELD","WANTED","BLOCKED"};
-    private final static String[] voteStatus = new String[]{"FALSE","TRUE"};
-    public static int state = RELEASED;
-    public static boolean voted = false;
+    public MutualExclusion mutex;
 
-    // Nodes
+    // Nodes and Groups
     public static MyNode nodeME = new MyNode();
-    public static ArrayList<Node> otherNodes = new ArrayList<Node>();
     public static String[] nodes;
-    
-    // Groups
+    public static ArrayList<Node> otherNodes = new ArrayList<Node>();
     public static ArrayList<String> groups = new ArrayList<String>();
     public static ArrayList<Group> myGroups = new ArrayList<Group>();
-   // public static boolean remulticast = false;
     
     // ClockService
     public ClockService clockService = null;
-    private final static int EQUAL = 0;
-	private final static int BEFORE = 1;
-    private final static int AFTER = 2;
-    private final static int CONCURRENT = 3;
-    private final static int ERROR = 4;
     
     // Logging
     public static TimeStampedMessage currentMessage = null;
@@ -687,12 +669,9 @@ public class MessagePasser {
 	                    receive();
 	                    ProcessMessage();
 	                    
-	                    if (state == WANTED) {
-	                    	state = BLOCKED;
-	                    	requestStatusLabel.setText("<html><br>Critical Section State Status: " + requestStatus[state] + "</html>");
-	                    	mainFrame.repaint();
-	                    }
-	                    mainFrame.repaint();
+	                    // Checkt to see if status updated
+	                    mutex.updateStatus();
+	                    UpdateStatusLabel();
 	                    
                     // Log message
 	                } else if (e.getActionCommand().equals("log")){
@@ -714,55 +693,26 @@ public class MessagePasser {
 	        // Request / Release Critical Section Buttons
 	        requestButtonListener = new ActionAdapter() {
 	            public void actionPerformed(ActionEvent e) {
+	            	String type = "";
 	            	if (e.getActionCommand().equals("request")) {
-	            		
-	                    // Create request message
 	            		clockService.updateTimeStamp();
-	                	TimeStampedMessage theMessage = new TimeStampedMessage(nodeME.myVotingSet, "REQUEST", clockService.get_sendTimeStamp().ts+","+nodeME.name);
-                        theMessage.set_seqNum(sequenceNumber); 
-                        sequenceNumber++;
-                        theMessage.set_source(nodeME.name);
-                        theMessage.set_globalClock(Integer.parseInt(clockService.get_sendTimeStamp().ts));
-                        theMessage.set_nodeIndex(100);
-                    	theMessage.set_multicast(true);
-                    	theMessage.set_timeStamp(myGroups.get(nodeME.myVotingSetNumber).groupVectorClock.get_sendTimeStamp());
-
-	                    // Set state to wanted
-	                    state = WANTED;
-	                    requestStatusLabel.setText("<html><br>Critical Section State Status: " + requestStatus[state] + "</html>");
-	                    mainFrame.repaint();
-	                    
-	                    // Multicast REQUEST
-                    	Multicast(theMessage);
+	            		type = "REQUEST";
+	                    mutex.set_state(MutualExclusion.WANTED);
 	            		
 	            	} else if (e.getActionCommand().equals("release")) {
-	            		// Set state to released
-	            		state = RELEASED;
-	            		requestStatusLabel.setText("<html><br>Critical Section State Status: " + requestStatus[state] + "</html>");
-	            		
+	            		type = "RELEASED";
+	            		mutex.set_state(MutualExclusion.RELEASED);
 	            		releaseButton.setEnabled(false);
 	            		requestButton.setEnabled(true);
-	            		
-	                    // Create release message
-	                	TimeStampedMessage release_msg = new TimeStampedMessage(nodeME.myVotingSet, "RELEASE", "");
-	                	release_msg.set_seqNum(sequenceNumber); 
-                        sequenceNumber++;
-                        release_msg.set_source(nodeME.name);
-                        release_msg.set_globalClock(Integer.parseInt(clockService.get_sendTimeStamp().ts));
-                        release_msg.set_nodeIndex(100);
-                        release_msg.set_multicast(true);
-                    	int groupnum = 0;
-                    	for (int i=0; i<myGroups.size(); i++) {
-                    		if (myGroups.get(i).groupName.equals(nodeME.myVotingSet)) {
-                    			release_msg.set_timeStamp(myGroups.get(i).groupVectorClock.get_sendTimeStamp());
-                    			groupnum = i;
-                    			break;
-                    		}
-                    	}
                     	
-	            		// Multicast release message
-	            		Multicast(release_msg);	
 	            	}
+	            	UpdateStatusLabel();
+	            	
+	            	// Create request or release message
+	            	TimeStampedMessage mutex_msg = CreateMutexMessage(type);
+	            	
+            		// Multicast release message
+            		Multicast(mutex_msg);	
 	            }
             };
 		}
@@ -874,9 +824,10 @@ public class MessagePasser {
 		        requestLabel = new JLabel();
 		        requestStatusLabel = new JLabel();
 		        voteStatusLabel = new JLabel();
-		        requestLabel.setText("<html><UL><LI>Number of Requests Made: " + numRequests + "<LI>" + "   Number of Replies Received: " + numReplies + "</UL></html>");
-	    		requestStatusLabel.setText("<html><br>Critical Section State Status: " + requestStatus[state] + "</html>");
-	    		voteStatusLabel.setText("<html>Critical Section Vote Status: " + Boolean.toString(voted).toUpperCase() + "<br></html>");
+		        requestLabel.setText("<html><UL><LI>Number of Requests Made: " + mutex.get_numRequests() + 
+		        					   "<LI>" + "Number of Replies Received: " + mutex.get_numReplies() + "</UL></html>");
+	    		requestStatusLabel.setText("<html><br>Critical Section State Status: " + mutex.get_stateString() + "</html>");
+	    		voteStatusLabel.setText("<html>Critical Section Vote Status: " + Boolean.toString(mutex.get_voted()).toUpperCase() + "<br></html>");
 		        requestButton = new JButton("REQUEST");
 		        requestButton.setPreferredSize(new Dimension(120, 30));
 		        requestButton.setActionCommand("request");
@@ -1254,22 +1205,43 @@ public class MessagePasser {
 	        }
 	    }
 	    
-	    // Handle the receipt of a REPLY message ***********************************
+	    // Update request label
+	    public void UpdateCountLabel() {
+	    	requestLabel.setText("<html><UL><LI>Number of Requests Made: " + mutex.get_numRequests() + 
+            		"<LI>" + "Number of Replies Received: " + mutex.get_numReplies() + "</UL></html>");
+	    	mainFrame.repaint();
+	    }
+	    
+	    // Update status label
+	    public void UpdateStatusLabel() {
+	    	requestStatusLabel.setText("<html><br>Critical Section State Status: " + 
+	    					mutex.get_stateString() + "</html>");
+	    	mainFrame.repaint();
+	    }
+	    
+	    // Update vote status label
+	    public void UpdateVoteStatusLabel() {
+	    	voteStatusLabel.setText("<html>Critical Section Vote Status: " + 
+	    			Boolean.toString(mutex.get_voted()).toUpperCase() + "<br></html>");
+    		mainFrame.repaint();
+	    }
+	    
+	    //***********************************
+	    // Handle the receipt of a REPLY message
 	    public void ReplyMessageHandler() {
 				// Update number of replies count
-				numReplies++;
-				requestLabel.setText("<html><UL><LI>Number of Requests Made: " + numRequests + "<LI>" + "   Number of Replies Received: " + numReplies + "</UL></html>");
-				mainFrame.repaint();
+	    		mutex.set_numReplies();
+	    		UpdateCountLabel();
 				
 				// Check to see if received all ACKS / REPLY messages to REQUEST made
-				if (numReplies == myGroups.get(nodeME.myVotingSetNumber).numMembers) {
+				if (mutex.checkReplyCount()) {
 					// Set state to held
-	                state = HELD;
+	                mutex.set_state(MutualExclusion.HELD);
 	                releaseButton.setEnabled(true);
 	                requestButton.setEnabled(false);
-	                requestLabel.setText("<html><UL><LI>Number of Requests Made: " + numRequests + "<LI>" + "   Number of Replies Received: " + numReplies + "</UL></html>");
-	                requestStatusLabel.setText("<html><br>Critical Section State Status: " + requestStatus[state] + "</html>");
-	                mainFrame.repaint();
+	                UpdateCountLabel();
+	                UpdateStatusLabel();
+	                
 				}
 	    }
 	    
@@ -1291,8 +1263,45 @@ public class MessagePasser {
 	    	}
 	    }
 	   
-	    // Handle the receipt of a REQUEST message ***********************************
+	    // Create REPLY message
+	    public void CreateAndSendReplyMessage(TimeStampedMessage msg) {
+	    	// Create the REPLY message
+			TimeStampedMessage reply = new TimeStampedMessage(msg.get_source(),"REPLY","");
+			reply.set_source(nodeME.name);
+			reply.set_seqNum(sequenceNumber);
+			sequenceNumber++;
+			reply.set_nodeIndex(GetSendNodeIndex(msg.get_source()));
+			reply.set_globalClock(Integer.parseInt(clockService.get_sendTimeStamp().ts));
+			reply.set_timeStamp(clockService.get_sendTimeStamp());
+
+			if (msg.get_source().equals(nodeME.name)) {
+				nodeME.receiveQueue.add(reply);
+			} else {
+				send(reply);
+			}
+			
+			// Set voted to TRUE
+			mutex.set_voted(true);
+			UpdateVoteStatusLabel();
+	    }
+	    
+	    // Create REQUEST or RELEASE message
+	    public TimeStampedMessage CreateMutexMessage(String type) {
+        	TimeStampedMessage theMessage = new TimeStampedMessage(nodeME.myVotingSet, type, clockService.get_sendTimeStamp().ts+","+nodeME.name);
+            theMessage.set_seqNum(sequenceNumber); 
+            sequenceNumber++;
+            theMessage.set_source(nodeME.name);
+            theMessage.set_globalClock(Integer.parseInt(clockService.get_sendTimeStamp().ts));
+            theMessage.set_nodeIndex(100);
+        	theMessage.set_multicast(true);
+        	theMessage.set_timeStamp(myGroups.get(nodeME.myVotingSetNumber).groupVectorClock.get_sendTimeStamp()); 	
+        	return theMessage;
+	    }
+	    
+	    //***********************************
+	    // Handle the receipt of a REQUEST message
 	    public void RequestMessageHandler(TimeStampedMessage msg) {
+	    	
     		// Update timestamp of global logical clock embedded in the data of a REQUEST message
     		String[] data = msg.get_data().toString().split(",");
     		TimeStamp received_ts = new TimeStamp(data[0]);
@@ -1300,51 +1309,31 @@ public class MessagePasser {
     		
     		// Increment successfully made request count
     		if (msg.get_source().equals(nodeME.name)) {
-            	numRequests++;
-    	        requestLabel.setText("<html><UL><LI>Number of Requests Made: " + numRequests + "<LI>" + "   Number of Replies Received: " + numReplies + "</UL></html>");
-                mainFrame.repaint();
+            	mutex.set_numRequests();
+            	UpdateCountLabel();
     		}
     		
-    		// Based on state and voted: Queue the REQUEST (don't send a REPLY yet)
-			if ((state == HELD || voted)) { //&& !msg.get_source().equals(nodeME.name)) {
+    		// Queue the REQUEST (don't send a REPLY yet)
+			if (mutex.checkStateAndVoted()) {
 				nodeME.requestQueue.add(msg);
 				requestText.append("\nREQUEST from > " + msg.toString() + "\n");
 				
-			// Otherwise, send REPLY message to the REQUEST
+			// Create and send REPLY message and set voted to TRUE
 			} else {			
-				// Create the REPLY message
-				TimeStampedMessage reply = new TimeStampedMessage(msg.get_source(),"REPLY","");
-				reply.set_source(nodeME.name);
-				reply.set_seqNum(sequenceNumber);
-				sequenceNumber++;
-				reply.set_nodeIndex(GetSendNodeIndex(msg.get_source()));
-				reply.set_globalClock(Integer.parseInt(clockService.get_sendTimeStamp().ts));
-				reply.set_timeStamp(clockService.get_sendTimeStamp());
-				
-				// Send the REPLY message
-				if (msg.get_source().equals(nodeME.name)) {
-    				nodeME.receiveQueue.add(reply); 				
-				} else {
-    				send(reply);
-				}
-				
-				// Set voted to TRUE
-				voted = true;
-        		voteStatusLabel.setText("<html>Critical Section Vote Status: " + Boolean.toString(voted).toUpperCase() + "<br></html>");
-        		mainFrame.repaint();
+				CreateAndSendReplyMessage(msg);
 			}
 	    }
 	    
-	    // Handle the receipt of a RELEASE message ***********************************
-	    public void ReleaseMessageHandler(TimeStampedMessage msg) {			
+	    //***********************************
+	    // Handle the receipt of a RELEASE message
+	    public void ReleaseMessageHandler(TimeStampedMessage msg) {
         	// Only reset number of replies received if you are releasing your own ownership of a CS
         	if (msg.get_source().equals(nodeME.name)) {
-        		numReplies = 0;
-        		requestLabel.setText("<html><UL><LI>Number of Requests Made: " + numRequests + "<LI>" + "   Number of Replies Received: " + numReplies + "</UL></html>");
-    			mainFrame.repaint();
+        		mutex.resetCounts();
+        		UpdateCountLabel();
         	}
         	
-        	// Check if requestqueue has messages
+        	// Check Request Queue for outstanding REQUESTs
 			if (!nodeME.requestQueue.isEmpty()) {
 				// Order the request queue (with global logical clock)
 				OrderRequestQueue();
@@ -1353,26 +1342,8 @@ public class MessagePasser {
 					TimeStampedMessage request_msg = nodeME.requestQueue.take();
 					requestText.append("Request Queue now has " + nodeME.requestQueue.size() + " messages remaining.\n");
 					
-					// Create REPLY message
-						TimeStampedMessage reply = new TimeStampedMessage(request_msg.get_source(),"REPLY","");
-	    				reply.set_source(nodeME.name);
-	    				reply.set_seqNum(sequenceNumber);
-	    				sequenceNumber++;
-	    				reply.set_nodeIndex(GetSendNodeIndex(request_msg.get_source()));
-	    				reply.set_globalClock(Integer.parseInt(clockService.get_sendTimeStamp().ts));
-	    				reply.set_timeStamp(clockService.get_sendTimeStamp());
-	    				
-    				// Send REPLY message
-					if (request_msg.get_source().equals(nodeME.name)) {
-	    				nodeME.receiveQueue.add(reply);
-					} else {
-	    				send(reply);
-					}
-					
-					// Set voted to TRUE
-    				voted = true;
-            		voteStatusLabel.setText("<html>Critical Section Vote Status: " + Boolean.toString(voted).toUpperCase() + "<br></html>");
-            		mainFrame.repaint();
+					// Create and send REPLY message and set voted to TRUE
+					CreateAndSendReplyMessage(request_msg);
             		
 				} catch (InterruptedException e) {
 					System.err.println("Problem getting request from request queue.");
@@ -1380,9 +1351,8 @@ public class MessagePasser {
 				
 			// Otherwise, set voted to false
 			} else {
-				voted = false;
-				voteStatusLabel.setText("<html>Critical Section Vote Status: " + Boolean.toString(voted).toUpperCase() + "<br></html>");
-        		mainFrame.repaint();
+				mutex.set_voted(false);
+				UpdateVoteStatusLabel();
 			}
 	    }
 	   
@@ -1393,7 +1363,8 @@ public class MessagePasser {
 	        mainFrame.repaint();
 	    }
 	    
-	    // Process / Deliver Message from the receiveQueue ***********************************
+	    //***********************************
+	    // Process / Deliver Message from the receiveQueue 
 	    public TimeStampedMessage ProcessMessage() {
 	    	
 	    	TimeStampedMessage msg = null;	
@@ -1411,15 +1382,15 @@ public class MessagePasser {
 					// Update global or group clock upon message receipt
 	            	UpdateClockAfterReceivingMessage(msg);
 	            	
-	            	// Handle specific types of mutex-related messages
-	            	switch (msg.get_kind()) {
-	            	case "REPLY":	ReplyMessageHandler(); 		break;
-	            	case "REQUEST":	RequestMessageHandler(msg); break;
-	            	case "RELEASE":	ReleaseMessageHandler(msg); break;
-	            	}
-	            	
 	            	// Update GUI message history panel
 	            	DisplayReceivedMessage(msg);
+	            	
+	            	// Handle specific types of mutex-related messages
+	            	switch (msg.get_kind()) {
+	            	case "REPLY":		ReplyMessageHandler(); 		break;
+	            	case "REQUEST":		RequestMessageHandler(msg); break;
+	            	case "RELEASED":	ReleaseMessageHandler(msg); break;
+	            	}
 	            	
 				} catch (InterruptedException e) {
 					System.err.println("Problem delivering message from the receive queue.");
@@ -1529,6 +1500,9 @@ public class MessagePasser {
 	        		nodeME.myVotingSetNumber = i;
 	        	}
 	        }
+	        
+	        // Set up mutex information
+	        mutex = new MutualExclusion(myGroups.get(nodeME.myVotingSetNumber).numMembers);
 	        
 	        // Set up GUI
 	        SetupGui();
