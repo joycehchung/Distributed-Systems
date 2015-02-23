@@ -825,7 +825,9 @@ public class MessagePasser {
 		        requestStatusLabel = new JLabel();
 		        voteStatusLabel = new JLabel();
 		        requestLabel.setText("<html><UL><LI>Number of Requests Made: " + mutex.get_numRequests() + 
-		        					   "<LI>" + "Number of Replies Received: " + mutex.get_numReplies() + "</UL></html>");
+		        					   "<LI>" + "Number of Replies Received: " + mutex.get_numReplies() + 
+		        					   "<LI>" + "Total Requests Made: " + mutex.get_totalRequests() + 
+		        					   "<LI>" + "Total Replies Received: " + mutex.get_totalReplies() + "</UL></html>");
 	    		requestStatusLabel.setText("<html><br>Critical Section State Status: " + mutex.get_stateString() + "</html>");
 	    		voteStatusLabel.setText("<html>Critical Section Vote Status: " + Boolean.toString(mutex.get_voted()).toUpperCase() + "<br></html>");
 		        requestButton = new JButton("REQUEST");
@@ -1208,7 +1210,9 @@ public class MessagePasser {
 	    // Update request label
 	    public void UpdateCountLabel() {
 	    	requestLabel.setText("<html><UL><LI>Number of Requests Made: " + mutex.get_numRequests() + 
-            		"<LI>" + "Number of Replies Received: " + mutex.get_numReplies() + "</UL></html>");
+					   "<LI>" + "Number of Replies Received: " + mutex.get_numReplies() + 
+					   "<LI>" + "Total Requests Made: " + mutex.get_totalRequests() + 
+					   "<LI>" + "Total Replies Received: " + mutex.get_totalReplies() + "</UL></html>");
 	    	mainFrame.repaint();
 	    }
 	    
